@@ -1,0 +1,132 @@
+{
+  "version": "2.0.0",
+  "updatedAt": "2026-10-19T18:05:14.056Z",
+  "serviceAccountConfigured": false,
+  "categories": {
+    "lower": {
+      "categoryId": "lower",
+      "categoryTitle": "Lower Class Category",
+      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit",
+      "spreadsheetId": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+      "worksheetName": "LowerClass",
+      "headerRowIndex": 1,
+      "status": "connected",
+      "lastTestedAt": "2026-10-19T15:39:00.447Z",
+      "lastSyncedAt": "2026-10-19T17:43:12.475Z",
+      "columnMappings": {
+        "rollNumber": "Roll No",
+        "studentName": "Student Name",
+        "fatherName": "Father Name",
+        "schoolName": "School",
+        "district": "District",
+        "obtainedMarks": "Obtained Marks",
+        "totalMarks": "Total Marks",
+        "percentage": "Percentage",
+        "grade": "Grade",
+        "passFailStatus": "Status",
+        "rank": "Position"
+      },
+      "availableWorksheets": [
+        "LowerClass",
+        "Summary"
+      ],
+      "detectedHeaders": [
+        "Roll No",
+        "Student Name",
+        "Father Name",
+        "School",
+        "District",
+        "Obtained Marks",
+        "Total Marks",
+        "Percentage",
+        "Grade",
+        "Status",
+        "Position"
+      ]
+    },
+    "middle": {
+      "categoryId": "middle",
+      "categoryTitle": "Middle Class Category",
+      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit",
+      "spreadsheetId": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+      "worksheetName": "MiddleClass",
+      "headerRowIndex": 1,
+      "status": "connected",
+      "lastTestedAt": "2026-10-19T15:39:00.447Z",
+      "lastSyncedAt": "2026-10-19T15:39:00.447Z",
+      "columnMappings": {
+        "rollNumber": "Roll Number",
+        "studentName": "Candidate Name",
+        "fatherName": "Father's Name",
+        "schoolName": "Institution",
+        "district": "District",
+        "classOrSection": "Class / Section",
+        "obtainedMarks": "Marks Scored",
+        "totalMarks": "Max Marks",
+        "percentage": "Percent",
+        "grade": "Grade",
+        "passFailStatus": "Result",
+        "rank": "Rank"
+      },
+      "availableWorksheets": [
+        "MiddleClass",
+        "Summary"
+      ],
+      "detectedHeaders": [
+        "Roll Number",
+        "Candidate Name",
+        "Father's Name",
+        "Institution",
+        "District",
+        "Class / Section",
+        "Marks Scored",
+        "Max Marks",
+        "Percent",
+        "Grade",
+        "Result",
+        "Rank"
+      ]
+    },
+    "overall": {
+      "categoryId": "overall",
+      "categoryTitle": "Overall Championship Track",
+      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit",
+      "spreadsheetId": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+      "worksheetName": "OverallResults",
+      "headerRowIndex": 1,
+      "status": "connected",
+      "lastTestedAt": "2026-10-19T15:39:00.447Z",
+      "lastSyncedAt": "2026-10-19T18:05:14.056Z",
+      "columnMappings": {
+        "rollNumber": "Roll No",
+        "studentName": "Student Name",
+        "fatherName": "Guardian Name",
+        "schoolName": "School / College",
+        "district": "District",
+        "obtainedMarks": "Total Obtained",
+        "totalMarks": "Grand Total",
+        "percentage": "Percentage",
+        "grade": "Grade",
+        "passFailStatus": "Remarks",
+        "rank": "Merit Position"
+      },
+      "availableWorksheets": [
+        "OverallResults",
+        "Ranks"
+      ],
+      "detectedHeaders": [
+        "Roll No",
+        "Student Name",
+        "Guardian Name",
+        "School / College",
+        "District",
+        "Total Obtained",
+        "Grand Total",
+        "Percentage",
+        "Grade",
+        "Remarks",
+        "Merit Position"
+      ]
+    }
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "organizationName": "Triple E Organization",
+  "organizationTagline": "Education · Empowerment · Environment",
+  "organizationRegion": "District Ghanche, Gilgit-Baltistan",
+  "motto": "Promoting Education, Empowerment, and Environment through learning, knowledge, and healthy academic competition in District Ghanche, Gilgit-Baltistan.",
+  "competitionTitle": "Triple E Organization 2nd Quiz Competition",
+  "competitionEdition": "2nd Quiz Competition",
+  "mainHeadline": "Celebrating Knowledge.\nInspiring Young Minds.",
+  "mainSubtitle": "Triple E Organization • 2nd Quiz Competition",
+  "competitionDescription": "An initiative by Triple E Organization, promoting Education, Empowerment, and Environment through learning, knowledge, and healthy academic competition in District Ghanche, Gilgit-Baltistan.",
+  "logoUrl": "/images/logos/triple-e-logo.jpg",
+  "heroImageUrl": "https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=1200&q=80",
+  "announcementText": "Triple E Organization 2nd Quiz Competition • Official Examination Results",
+  "announcementActive": true,
+  "resultsPublished": true,
+  "resultsNotice": "Official scorecards are compiled directly from the competition evaluation board records.",
+  "footerText": "Promoting Education, Empowerment, and Environment through learning, knowledge, and healthy academic competition in District Ghanche, Gilgit-Baltistan.",
+  "primaryContactEmail": "",
+  "primaryContactPhone": "",
+  "headquartersAddress": "District Ghanche, Gilgit-Baltistan, Pakistan",
+  "socialLinks": {
+    "facebook": "https://facebook.com/triple.e.baltistan.official",
+    "whatsapp": "https://wa.me/923451234567",
+    "youtube": "https://youtube.com/@tripleeorganization",
+    "instagram": "https://instagram.com/tripleeorg",
+    "linkedin": "https://linkedin.com/company/triple-e-org",
+    "email": "contact@triple-e.org",
+    "phone": "+92 300 0000000",
+    "customLinks": []
+  },
+  "lookupLabels": {
+    "searchTitle": "Check Competition Results",
+    "searchSubtitle": "Enter your official 2nd Quiz Competition Roll Number below to inspect your verified academic standing, percentage, and category ranking.",
+    "inputPlaceholder": "e.g. TE-101, TE-102, 0042...",
+    "buttonText": "Find Result"
+  },
+  "resultCardLabels": {
+    "scorecardTitle": "Official Verification Scorecard",
+    "controllerTitle": "Controller of Examinations",
+    "remarksTitle": "Verified by Triple-E Examination Committee"
+  },
+  "fieldVisibility": {
+    "showFatherName": true,
+    "showSchoolName": true,
+    "showDistrict": true,
+    "showClassOrSection": true,
+    "showRank": true,
+    "showGrade": true,
+    "showPassFailStatus": true,
+    "showSubjectBreakdown": true
+  },
+  "partnerAttribution": {
+    "enabled": true,
+    "tagline": "Designed & Developed by Siachen Mark Agency",
+    "location": "Islamabad",
+    "developerCredit": "Basharat Ali | Former Social Media Head, Triple E Organization",
+    "partnerName": "Siachen Mark Agency",
+    "partnerRole": "Digital & Technology Partner",
+    "partnerLogoUrl": "/images/logos/siachen-mark-logo.jpg",
+    "partnerWebsiteUrl": "https://siachen-mark.vercel.app/"
+  }
+}
