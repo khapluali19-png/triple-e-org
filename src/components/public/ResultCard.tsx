@@ -1,7 +1,9 @@
 "use client";
 
+import { useRef, useState } from "react";
 import Image from "next/image";
-import { Printer, RotateCcw } from "lucide-react";
+import { Download, RotateCcw, Loader2 } from "lucide-react";
+import { toJpeg } from "html-to-image";
 import { StudentResult, WebsiteBrandingConfig } from "@/lib/types";
 import { DEFAULT_BRANDING, getLevelDescription } from "@/lib/constants";
 
@@ -170,18 +172,21 @@ export default function ResultCard({
   onReset, 
   branding = DEFAULT_BRANDING 
 }: ResultCardProps) {
+  const certificateRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState(false);
+
   const classRange = getCleanClassRange(result.level, result.levelDescription);
   const achievementStatement = getAchievementStatement(result);
 
-  const handlePrint = async () => {
-    if (typeof window === "undefined") return;
+  const handleDownloadJpg = async () => {
+    if (typeof window === "undefined" || !certificateRef.current) return;
 
     try {
-      // 1. Ensure all certificate images (Triple E logo, Siachen Mark logo) are loaded and decoded
-      const images = Array.from(
-        document.querySelectorAll(".certificate-print-root img")
-      ) as HTMLImageElement[];
+      setDownloading(true);
+      const cardEl = certificateRef.current;
 
+      // 1. Ensure all certificate images (Triple E logo, Siachen Mark logo) are loaded & decoded
+      const images = Array.from(cardEl.querySelectorAll("img")) as HTMLImageElement[];
       await Promise.all(
         images.map((img) => {
           if (img.complete && img.naturalWidth > 0) {
@@ -203,24 +208,53 @@ export default function ResultCard({
         })
       );
 
-      // 2. Wait for web fonts if available
-      if (document.fonts && document.fonts.ready) {
+      // 2. Ensure web fonts are fully rendered
+      if (typeof document !== "undefined" && document.fonts && document.fonts.ready) {
         await document.fonts.ready;
       }
-    } catch {
-      // Continue to print even if pre-decode promise rejects
-    }
 
-    // Small delay to ensure the browser paint pipeline is completely finished
-    setTimeout(() => {
-      window.print();
-    }, 120);
+      // 3. Compute pixelRatio targeting 300 DPI A4 landscape (~3508px width)
+      const currentWidth = cardEl.offsetWidth || 1024;
+      const targetWidth = 3508;
+      const pixelRatio = Math.max(2, Math.min(4, targetWidth / currentWidth));
+
+      // 4. Convert DOM element to high-resolution JPEG (white background, clean edges)
+      const dataUrl = await toJpeg(cardEl, {
+        quality: 0.96,
+        pixelRatio,
+        backgroundColor: "#ffffff",
+        cacheBust: true,
+        style: {
+          boxShadow: "none",
+          margin: "0",
+        },
+      });
+
+      // 5. Trigger download with student-based filename
+      const sanitizedName = (result.studentName || "Student")
+        .trim()
+        .replace(/[^a-zA-Z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+      const filename = `Triple-E-Certificate-${sanitizedName || "Student"}.jpg`;
+
+      const link = document.createElement("a");
+      link.download = filename;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error("Failed to generate JPG certificate:", err);
+    } finally {
+      setDownloading(false);
+    }
   };
 
   return (
     <div className="w-full max-w-5xl mx-auto space-y-6 text-center">
-      {/* Printable Certificate Canvas (Exact Landscape A4 Single Page Ratio: 297mm x 210mm) */}
+      {/* Printable / Exportable Certificate Canvas (Landscape A4 Single Page Ratio: 297mm x 210mm) */}
       <div 
+        ref={certificateRef}
         className="certificate-print-root relative w-full bg-white text-[#0E2A47] p-5 sm:p-8 md:p-10 shadow-2xl transition-all border border-slate-200"
         style={{
           boxShadow: "0 20px 45px -15px rgba(14, 42, 71, 0.2), 0 0 0 1px rgba(14, 42, 71, 0.05)",
@@ -518,15 +552,25 @@ export default function ResultCard({
         </div>
       </div>
 
-      {/* Action Buttons (Excluded from Print) */}
+      {/* Action Buttons (JPG Download & Search Reset) */}
       <div className="no-print flex flex-wrap items-center justify-center gap-3 pt-2">
         <button
           type="button"
-          onClick={handlePrint}
-          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#0E2A47] hover:bg-[#16385d] text-white font-semibold text-xs sm:text-sm transition-all shadow-md hover:shadow-lg cursor-pointer"
+          disabled={downloading}
+          onClick={handleDownloadJpg}
+          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#0E2A47] hover:bg-[#16385d] disabled:bg-slate-500 text-white font-semibold text-xs sm:text-sm transition-all shadow-md hover:shadow-lg cursor-pointer"
         >
-          <Printer className="w-4 h-4 text-white" />
-          <span>Print / Save as PDF</span>
+          {downloading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin text-white" />
+              <span>Generating High-Res JPG...</span>
+            </>
+          ) : (
+            <>
+              <Download className="w-4 h-4 text-white" />
+              <span>Download Certificate (JPG)</span>
+            </>
+          )}
         </button>
 
         {onReset && (
