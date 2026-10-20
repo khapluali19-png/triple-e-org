@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "node src/test-phase5.mjs && node src/test-sheets-lookup.mjs"
+    "reset-admin": "node scripts/reset-admin-password.mjs",
+    "test": "node --max-old-space-size=4096 src/test-phase5.mjs && node --max-old-space-size=4096 src/test-sheets-lookup.mjs"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

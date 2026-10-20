@@ -1,6 +1,6 @@
 {
   "version": "2.0.0",
-  "updatedAt": "2026-10-19T18:05:14.056Z",
+  "updatedAt": "2026-10-20T09:06:51.688Z",
   "serviceAccountConfigured": false,
   "categories": {
     "lower": {
@@ -96,7 +96,7 @@
       "headerRowIndex": 1,
       "status": "connected",
       "lastTestedAt": "2026-10-19T15:39:00.447Z",
-      "lastSyncedAt": "2026-10-19T18:05:14.056Z",
+      "lastSyncedAt": "2026-10-20T09:06:51.688Z",
       "columnMappings": {
         "rollNumber": "Roll No",
         "studentName": "Student Name",

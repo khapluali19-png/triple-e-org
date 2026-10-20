@@ -3,8 +3,17 @@ import { authenticateAdmin } from "@/lib/server/adminAuthStore";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { email, password } = body;
+    let body: any;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, message: "Invalid request format. JSON body required." },
+        { status: 400 }
+      );
+    }
+
+    const { email, password } = body || {};
 
     if (!email || !password) {
       return NextResponse.json(
@@ -14,6 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     const clientIp =
+      request.headers.get("x-vercel-ip") ||
       request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
       request.headers.get("x-real-ip") ||
       "127.0.0.1";
@@ -31,11 +41,11 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({
       success: true,
       message: result.message,
-      email: email.trim().toLowerCase(),
-      mustChangePassword: result.mustChangePassword,
+      email: (email || "").trim().toLowerCase(),
+      mustChangePassword: !!result.mustChangePassword,
     });
 
-    // Set secure HttpOnly cookie
+    // Set secure HttpOnly session cookie
     response.cookies.set({
       name: "admin_session",
       value: result.sessionToken,
@@ -48,8 +58,12 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (err: any) {
+    console.error("[Login API] Critical authentication error:", err);
     return NextResponse.json(
-      { success: false, message: err.message || "An unexpected error occurred." },
+      {
+        success: false,
+        message: "An internal authentication error occurred. Please verify administrator credentials or check deployment logs.",
+      },
       { status: 500 }
     );
   }

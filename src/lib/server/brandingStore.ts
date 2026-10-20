@@ -25,22 +25,32 @@ export function isValidWebUrl(url?: string): boolean {
     return false;
   }
 }
-
 /**
  * Retrieves server-side website branding settings.
  */
+let inMemoryBranding: WebsiteBrandingConfig | null = null;
+
 export function getWebsiteBranding(): WebsiteBrandingConfig {
+  if (inMemoryBranding) {
+    return inMemoryBranding;
+  }
+
   ensureDirExists(DATA_DIR);
 
   if (!fs.existsSync(BRANDING_FILE)) {
-    fs.writeFileSync(BRANDING_FILE, JSON.stringify(DEFAULT_BRANDING, null, 2), "utf-8");
+    try {
+      fs.writeFileSync(BRANDING_FILE, JSON.stringify(DEFAULT_BRANDING, null, 2), "utf-8");
+    } catch {
+      // serverless read-only
+    }
+    inMemoryBranding = DEFAULT_BRANDING;
     return DEFAULT_BRANDING;
   }
 
   try {
     const raw = fs.readFileSync(BRANDING_FILE, "utf-8");
     const parsed = JSON.parse(raw);
-    return {
+    const resolved: WebsiteBrandingConfig = {
       ...DEFAULT_BRANDING,
       ...parsed,
       socialLinks: {
@@ -64,8 +74,11 @@ export function getWebsiteBranding(): WebsiteBrandingConfig {
         ...(parsed.partnerAttribution || {}),
       },
     };
+    inMemoryBranding = resolved;
+    return resolved;
   } catch (err) {
     console.error("Failed to read branding config file, using defaults:", err);
+    inMemoryBranding = DEFAULT_BRANDING;
     return DEFAULT_BRANDING;
   }
 }
@@ -127,9 +140,16 @@ export function saveWebsiteBranding(
     },
   };
 
-  const tempFile = `${BRANDING_FILE}.tmp.${Date.now()}`;
-  fs.writeFileSync(tempFile, JSON.stringify(merged, null, 2), "utf-8");
-  fs.renameSync(tempFile, BRANDING_FILE);
+  inMemoryBranding = merged;
+
+  try {
+    ensureDirExists(DATA_DIR);
+    const tempFile = `${BRANDING_FILE}.tmp.${Date.now()}`;
+    fs.writeFileSync(tempFile, JSON.stringify(merged, null, 2), "utf-8");
+    fs.renameSync(tempFile, BRANDING_FILE);
+  } catch (err: any) {
+    console.warn("[BrandingStore] Filesystem write bypassed in serverless environment:", err?.message || err);
+  }
 
   logAdminActivity("Website Branding Updated", actor, "Updated competition identity, ribbons, or social links.");
 

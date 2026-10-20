@@ -12,7 +12,16 @@ export async function POST(request: NextRequest) {
     message: "Administrator session terminated.",
   });
 
-  // Clear cookie
-  response.cookies.delete("admin_session");
+  // Explicitly clear the cookie across all browser variants
+  response.cookies.set({
+    name: "admin_session",
+    value: "",
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
+
   return response;
 }

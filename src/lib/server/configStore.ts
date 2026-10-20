@@ -135,7 +135,13 @@ function ensureDirExists(dirPath: string) {
   }
 }
 
+let inMemoryCategoryStore: CategorySheetsStore | null = null;
+
 export function getServerCategoryStore(): CategorySheetsStore {
+  if (inMemoryCategoryStore) {
+    return inMemoryCategoryStore;
+  }
+
   try {
     ensureDirExists(DATA_DIR);
     if (!fs.existsSync(CONFIG_FILE)) {
@@ -149,7 +155,12 @@ export function getServerCategoryStore(): CategorySheetsStore {
         serviceAccountConfigured: hasServiceAccount,
         serviceAccountEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || undefined,
       };
-      fs.writeFileSync(CONFIG_FILE, JSON.stringify(initialStore, null, 2), "utf-8");
+      try {
+        fs.writeFileSync(CONFIG_FILE, JSON.stringify(initialStore, null, 2), "utf-8");
+      } catch {
+        // serverless read-only
+      }
+      inMemoryCategoryStore = initialStore;
       return initialStore;
     }
 
@@ -165,24 +176,32 @@ export function getServerCategoryStore(): CategorySheetsStore {
       parsed.serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
     }
 
+    inMemoryCategoryStore = parsed;
     return parsed;
   } catch (error) {
     console.error("Failed to read server category store, using defaults:", error);
+    inMemoryCategoryStore = DEFAULT_STORE;
     return DEFAULT_STORE;
   }
 }
 
 export function saveServerCategoryStore(updated: CategorySheetsStore): void {
-  ensureDirExists(DATA_DIR);
   const dataToSave = {
     ...updated,
     updatedAt: new Date().toISOString(),
   };
 
-  // Write atomically via temporary file
-  const tempFile = `${CONFIG_FILE}.tmp.${Date.now()}`;
-  fs.writeFileSync(tempFile, JSON.stringify(dataToSave, null, 2), "utf-8");
-  fs.renameSync(tempFile, CONFIG_FILE);
+  inMemoryCategoryStore = dataToSave;
+
+  try {
+    ensureDirExists(DATA_DIR);
+    // Write atomically via temporary file
+    const tempFile = `${CONFIG_FILE}.tmp.${Date.now()}`;
+    fs.writeFileSync(tempFile, JSON.stringify(dataToSave, null, 2), "utf-8");
+    fs.renameSync(tempFile, CONFIG_FILE);
+  } catch (err: any) {
+    console.warn("[ConfigStore] Filesystem is read-only (serverless). Saved in memory only:", err?.message || err);
+  }
 }
 
 export function updateCategoryConnection(

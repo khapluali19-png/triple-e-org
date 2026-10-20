@@ -179,12 +179,30 @@ To allow the portal to read private Google Spreadsheets without making student m
 ### Mandatory Password Change
 Upon first login, the portal identifies `mustChangePassword: true` and blocks normal administration until the administrator chooses a new, strong password.
 
-### Password Reset Procedure
-If credentials are misplaced:
-1. Log in to the server shell or deployment console.
-2. Stop the application or edit `src/data/admin-auth.json`.
-3. Delete `src/data/admin-auth.json` (or set `mustChangePassword: true` with a temporary hash).
-4. Restart the service; the system will automatically re-bootstrap using `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD` from `.env.local`.
+### Serverless Session Architecture (Vercel Production)
+- **Stateless HMAC-SHA256 Signed Tokens**: The application uses cryptographically signed session tokens instead of local disk writes. This guarantees seamless multi-instance compatibility across Vercel serverless cold starts.
+- **Read-Only Filesystem Resilience**: The system safely detects serverless environments (`EROFS: read-only file system`) and avoids crashing HTTP 500 errors.
+
+### Operator Password Reset & Recovery
+The portal uses the standard `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD` configuration:
+- **Default Email**: `khapluali19@gmail.com` (configured via `INITIAL_ADMIN_EMAIL`)
+- **Default Password**: `ali12345` (configured via `INITIAL_ADMIN_PASSWORD`)
+
+#### Updating Credentials on Vercel
+To change the administrator password on Vercel:
+1. Open **Vercel Dashboard** > **triple-e-org** > **Settings** > **Environment Variables**.
+2. Set or update:
+   - `INITIAL_ADMIN_EMAIL` = `khapluali19@gmail.com`
+   - `INITIAL_ADMIN_PASSWORD` = `[Your Desired Password]`
+3. Ensure no deprecated `ADMIN_PASSWORD_HASH` variable is set.
+4. Redeploy the project. Vercel serverless will immediately accept the new password.
+
+#### Local Reset Tool
+You can also run the built-in reset script:
+```powershell
+npm run reset-admin -- "YourNewPassword123"
+```
+This updates local files and outputs the environment variables.
 
 ---
 

@@ -1,9 +1,7 @@
 {
   "email": "khapluali19@gmail.com",
-  "passwordHash": "$2b$12$eGfFiuw2VlFd6oUVI38aZuC5Zctkxz5bLjKrw4PIR0vfFxWQiZe96",
-  "mustChangePassword": false,
-  "lastLoginAt": "2026-10-19T18:11:25.539Z",
-  "passwordChangedAt": "2026-10-19T18:11:57.562Z",
-  "sessionToken": "1d6472b7c0cee2b3f5f17a2e892d3f05bbc264ab1dd35f2acf6b80612857c7e4",
-  "sessionExpiresAt": "2026-10-26T18:11:25.538Z"
+  "passwordHash": "$2b$12$dGft.i6/8wpwoyNEi0E4LuSPGJlEnAKbVaRrfd587jyM42RJd3aHK",
+  "mustChangePassword": true,
+  "lastLoginAt": null,
+  "passwordChangedAt": null
 }
