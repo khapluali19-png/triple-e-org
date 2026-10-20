@@ -1,10 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { 
-  Printer, 
-  RotateCcw 
-} from "lucide-react";
+import { Printer, RotateCcw } from "lucide-react";
 import { StudentResult, WebsiteBrandingConfig } from "@/lib/types";
 import { DEFAULT_BRANDING, getLevelDescription } from "@/lib/constants";
 
@@ -15,93 +12,123 @@ interface ResultCardProps {
 }
 
 /**
- * Classical Botanical & Filigree Corner Ornament
- * Uses deep navy outer framing, emerald green botanical leaves, and ruby red accent gemstones.
+ * Geometric corner ribbon banner matching the reference design:
+ * - Solid dark green corner triangle
+ * - Dark navy diagonal stripe
+ * - Red diagonal stripe
+ * - Inner green triangular accents connecting to the border frame
  */
 function CertificateCorner({ className = "" }: { className?: string }) {
   return (
     <svg
-      width="76"
-      height="76"
-      viewBox="0 0 76 76"
+      viewBox="0 0 160 160"
+      className={className}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={className}
       aria-hidden="true"
     >
-      {/* Outer corner framing lines */}
-      <path d="M2 38V2H38" stroke="#0E2A47" strokeWidth="2.5" strokeLinecap="square" />
-      <path d="M7 30V7H30" stroke="#0D7B54" strokeWidth="1.2" strokeLinecap="square" />
-      <path d="M11 22V11H22" stroke="#0E2A47" strokeWidth="0.8" strokeLinecap="square" />
+      {/* Outer corner dark green triangle */}
+      <polygon points="0,0 88,0 0,88" fill="#065A36" />
 
-      {/* Diagonal filigree connecting lines */}
-      <path d="M2 2L16 16" stroke="#0E2A47" strokeWidth="1" strokeLinecap="round" />
-      <path d="M7 7L22 22" stroke="#0D7B54" strokeWidth="0.75" strokeLinecap="round" />
+      {/* Navy blue diagonal stripe */}
+      <polygon points="0,90 90,0 108,0 0,108" fill="#0E2A47" />
 
-      {/* Botanical leaves curling outward */}
-      <path
-        d="M12 12C12 21 17 28 23 34C21 26 19 19 12 12Z"
-        fill="#0D7B54"
-        fillOpacity="0.9"
-      />
-      <path
-        d="M12 12C21 12 28 17 34 23C26 21 19 19 12 12Z"
-        fill="#0D7B54"
-        fillOpacity="0.9"
-      />
-      <path
-        d="M17 17C17 24 21 29 26 33C24 27 22 22 17 17Z"
-        fill="#168B46"
-        fillOpacity="0.75"
-      />
-      <path
-        d="M17 17C24 17 29 21 33 26C27 24 22 22 17 17Z"
-        fill="#168B46"
-        fillOpacity="0.75"
-      />
+      {/* Red accent diagonal stripe */}
+      <polygon points="0,114 114,0 126,0 0,126" fill="#C52222" />
 
-      {/* Ruby red accent gemstone at corner pivot & tips */}
-      <circle cx="12" cy="12" r="2.8" fill="#D62828" stroke="#0E2A47" strokeWidth="0.75" />
-      <circle cx="30" cy="7" r="1.8" fill="#D62828" />
-      <circle cx="7" cy="30" r="1.8" fill="#D62828" />
-      <circle cx="22" cy="11" r="1.4" fill="#0D7B54" />
-      <circle cx="11" cy="22" r="1.4" fill="#0D7B54" />
+      {/* Inner green triangular accents */}
+      <polygon points="0,132 0,154 22,132" fill="#065A36" />
+      <polygon points="132,0 154,0 132,22" fill="#065A36" />
     </svg>
   );
 }
 
 /**
- * Botanical Leaf Divider with Center Accent
+ * Soft sage-green botanical laurel leaves for outer left and right margins
  */
-function BotanicalDivider({ className = "" }: { className?: string }) {
+function SideLeaves({ className = "" }: { className?: string }) {
   return (
     <svg
-      width="140"
-      height="16"
-      viewBox="0 0 140 16"
+      viewBox="0 0 90 280"
+      className={className}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={className}
       aria-hidden="true"
     >
-      <path d="M0 8H52" stroke="#0D7B54" strokeWidth="1" strokeLinecap="round" />
-      <path d="M88 8H140" stroke="#0D7B54" strokeWidth="1" strokeLinecap="round" />
       <path
-        d="M60 8C63 4 68 3 70 8C68 13 63 12 60 8Z"
-        fill="#0D7B54"
+        d="M15 270C15 235 42 215 62 195C62 225 38 255 15 270Z"
+        fill="#A3C5B0"
+        fillOpacity="0.45"
       />
       <path
-        d="M80 8C77 4 72 3 70 8C72 13 77 12 80 8Z"
-        fill="#168B46"
+        d="M38 215C38 180 68 160 88 135C82 170 58 200 38 215Z"
+        fill="#A3C5B0"
+        fillOpacity="0.38"
       />
-      <circle cx="70" cy="8" r="2" fill="#D62828" />
+      <path
+        d="M12 165C12 130 42 110 65 90C60 125 35 155 12 165Z"
+        fill="#A3C5B0"
+        fillOpacity="0.45"
+      />
+      <path
+        d="M32 105C32 70 62 50 82 25C76 60 52 95 32 105Z"
+        fill="#A3C5B0"
+        fillOpacity="0.38"
+      />
     </svg>
   );
 }
 
 /**
- * Computes formal achievement wording matching competition standards
+ * 3-Leaf emerald green motif below mission statement
  */
+function CenterLeafMotif({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      width="44"
+      height="18"
+      viewBox="0 0 44 18"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-hidden="true"
+    >
+      {/* Center upright leaf */}
+      <path
+        d="M22 17C19 10 18 5 22 1C26 5 25 10 22 17Z"
+        fill="#0D7B54"
+      />
+      {/* Left curving leaf */}
+      <path
+        d="M22 17C17 13 11 10 7 11C9 6 16 8 22 17Z"
+        fill="#0D7B54"
+      />
+      {/* Right curving leaf */}
+      <path
+        d="M22 17C27 13 33 10 37 11C35 6 28 8 22 17Z"
+        fill="#0D7B54"
+      />
+    </svg>
+  );
+}
+
+function getGradeDescriptor(grade?: string): string {
+  if (!grade) return "";
+  const g = grade.trim().toUpperCase();
+  if (g === "A+") return " — Outstanding";
+  if (g === "A") return " — Excellent";
+  if (g === "B") return " — Very Good";
+  if (g === "C") return " — Good";
+  if (g === "D") return " — Pass";
+  return "";
+}
+
+function getCleanClassRange(level?: string, rawDesc?: string): string {
+  const desc = rawDesc || getLevelDescription(level);
+  if (!desc) return "";
+  return desc.replace(/^classes\s+/i, "");
+}
+
 function getAchievementStatement(result: StudentResult): string {
   if (result.awardStatus) {
     if (
@@ -143,7 +170,7 @@ export default function ResultCard({
   onReset, 
   branding = DEFAULT_BRANDING 
 }: ResultCardProps) {
-  const levelDesc = result.levelDescription || getLevelDescription(result.level);
+  const classRange = getCleanClassRange(result.level, result.levelDescription);
   const achievementStatement = getAchievementStatement(result);
 
   const handlePrint = () => {
@@ -154,95 +181,93 @@ export default function ResultCard({
 
   return (
     <div className="w-full max-w-5xl mx-auto space-y-6 text-center">
-      {/* Printable Certificate Container (Landscape A4 proportion: 297mm x 210mm) */}
+      {/* Printable Certificate Canvas (Exact Landscape A4 Single Page Ratio: 297mm x 210mm) */}
       <div 
-        className="certificate-print-root relative w-full bg-[#FCFAF7] text-[#0E2A47] border-[3px] border-[#0E2A47] rounded-sm p-3 sm:p-4 md:p-5 shadow-2xl transition-all overflow-hidden"
+        className="certificate-print-root relative w-full bg-white text-[#0E2A47] p-5 sm:p-9 md:p-12 shadow-2xl transition-all overflow-hidden border border-slate-200"
         style={{
-          boxShadow: "0 20px 40px -15px rgba(14, 42, 71, 0.15), 0 0 0 1px rgba(14, 42, 71, 0.08)",
+          boxShadow: "0 20px 45px -15px rgba(14, 42, 71, 0.2), 0 0 0 1px rgba(14, 42, 71, 0.05)",
         }}
       >
-        {/* Subtle Watermark Texture / Leaf Emblem in Center */}
-        <div 
-          className="absolute inset-0 pointer-events-none opacity-[0.025] flex items-center justify-center overflow-hidden"
-          aria-hidden="true"
-        >
-          <div className="w-[500px] h-[500px] rounded-full border-[16px] border-[#0E2A47] flex items-center justify-center">
-            <span className="font-serif text-[120px] font-bold text-[#0E2A47]">EEE</span>
-          </div>
-        </div>
+        {/* Thin Green Perimeter Border (Inset 18-22px from all sides) */}
+        <div className="absolute inset-[14px] sm:inset-[18px] md:inset-[22px] border-[1.5px] border-[#0D7B54] pointer-events-none z-0" />
 
-        {/* Inner Elegant Thin Double-Border with Margin Inset */}
-        <div className="relative border border-[#0D7B54] p-5 sm:p-8 md:p-10 bg-[#FCFAF7]/95">
-          {/* 4 Classical Corner Ornaments */}
-          <CertificateCorner className="absolute top-1 left-1 sm:top-2 sm:left-2 pointer-events-none select-none" />
-          <CertificateCorner className="absolute top-1 right-1 sm:top-2 sm:right-2 scale-x-[-1] pointer-events-none select-none" />
-          <CertificateCorner className="absolute bottom-1 left-1 sm:bottom-2 sm:left-2 scale-y-[-1] pointer-events-none select-none" />
-          <CertificateCorner className="absolute bottom-1 right-1 sm:bottom-2 sm:right-2 scale-x-[-1] scale-y-[-1] pointer-events-none select-none" />
+        {/* 4 Geometric Corner Ribbon Banners */}
+        <CertificateCorner className="absolute top-0 left-0 w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 z-10 pointer-events-none select-none" />
+        <CertificateCorner className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 scale-x-[-1] z-10 pointer-events-none select-none" />
+        <CertificateCorner className="absolute bottom-0 left-0 w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 scale-y-[-1] z-10 pointer-events-none select-none" />
+        <CertificateCorner className="absolute bottom-0 right-0 w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 scale-x-[-1] scale-y-[-1] z-10 pointer-events-none select-none" />
 
+        {/* Soft Sage-Green Botanical Laurel Leaves along Left and Right Margins */}
+        <SideLeaves className="absolute left-4 sm:left-6 md:left-8 top-1/2 -translate-y-1/2 w-14 sm:w-18 md:w-22 h-auto pointer-events-none select-none z-0" />
+        <SideLeaves className="absolute right-4 sm:right-6 md:right-8 top-1/2 -translate-y-1/2 w-14 sm:w-18 md:w-22 h-auto scale-x-[-1] pointer-events-none select-none z-0" />
+
+        {/* Certificate Content (Z-Index above borders & leaves) */}
+        <div className="relative z-10 flex flex-col justify-between max-w-4xl mx-auto py-2 sm:py-3">
           {/* ======================================================== */}
-          {/* SECTION A: Top Organization Branding                     */}
+          {/* A. Top Organization Logo                                 */}
           {/* ======================================================== */}
-          <div className="flex flex-col items-center justify-center mb-4 sm:mb-5">
-            <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full p-1 bg-white border border-[#0D7B54]/30 shadow-xs">
+          <div className="flex flex-col items-center justify-center mb-2 sm:mb-3">
+            <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28">
               <Image
                 src={branding.logoUrl || "/images/logos/triple-e-logo.jpg"}
                 alt={branding.organizationName || "Triple E Organization"}
                 fill
                 sizes="(max-width: 640px) 80px, (max-width: 768px) 96px, 112px"
-                className="object-contain p-1"
+                className="object-contain"
                 priority
               />
             </div>
           </div>
 
           {/* ======================================================== */}
-          {/* SECTION B: Main Certificate Heading                      */}
+          {/* B. Main Certificate Heading                              */}
           {/* ======================================================== */}
-          <div className="space-y-1 sm:space-y-1.5 mb-4 sm:mb-5">
+          <div className="space-y-1 mb-2 sm:mb-3">
             <h1 
-              className="font-serif text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-[0.16em] sm:tracking-[0.2em] text-[#0E2A47] uppercase leading-none"
+              className="font-serif text-3xl sm:text-5xl md:text-6xl font-bold tracking-[0.08em] sm:tracking-[0.11em] text-[#0E2A47] uppercase leading-none"
               style={{ fontFamily: "'Cinzel', 'Playfair Display', Georgia, Cambria, 'Times New Roman', serif" }}
             >
               Certificate
             </h1>
-            
-            <div className="flex items-center justify-center gap-3 sm:gap-5 pt-1">
-              <div className="h-[1.5px] w-12 sm:w-20 md:w-28 bg-[#0D7B54]" />
+
+            <div className="flex items-center justify-center gap-3 sm:gap-6 pt-1 sm:pt-2">
+              <div className="h-[1.5px] w-14 sm:w-24 md:w-36 bg-[#0D7B54]" />
               <span 
-                className="font-serif text-xs sm:text-sm md:text-base font-bold tracking-[0.28em] sm:tracking-[0.34em] text-[#0E2A47] uppercase"
+                className="font-serif text-xs sm:text-base md:text-lg font-bold tracking-[0.25em] sm:tracking-[0.32em] text-[#0E2A47] uppercase"
                 style={{ fontFamily: "'Cinzel', 'Playfair Display', Georgia, Cambria, 'Times New Roman', serif" }}
               >
                 Of Achievement
               </span>
-              <div className="h-[1.5px] w-12 sm:w-20 md:w-28 bg-[#0D7B54]" />
+              <div className="h-[1.5px] w-14 sm:w-24 md:w-36 bg-[#0D7B54]" />
             </div>
           </div>
 
           {/* ======================================================== */}
-          {/* SECTION C: Competition Information                       */}
+          {/* C. Competition Information                               */}
           {/* ======================================================== */}
-          <div className="space-y-1 mb-5 sm:mb-6">
-            <p className="font-serif text-xs sm:text-sm md:text-base font-bold text-[#0E2A47] tracking-wider uppercase">
+          <div className="space-y-0.5 sm:space-y-1 mb-2">
+            <p className="font-serif text-xs sm:text-sm md:text-base font-bold text-[#0E2A47] tracking-wide">
               {branding.competitionEdition || "2nd Quiz Competition"} • District Ghanche, Gilgit-Baltistan
             </p>
-            <p className="text-[11px] sm:text-xs md:text-sm font-semibold text-[#0D7B54] tracking-[0.18em] uppercase">
+            <p className="text-[11px] sm:text-xs md:text-sm font-semibold text-[#0D7B54] tracking-[0.14em] uppercase">
               Education • Empowerment • Environment
             </p>
+            <div className="pt-1 flex justify-center">
+              <CenterLeafMotif />
+            </div>
           </div>
 
-          <BotanicalDivider className="mx-auto mb-5 sm:mb-6" />
-
           {/* ======================================================== */}
-          {/* SECTION D: Student Presentation                          */}
+          {/* D. Student Presentation                                  */}
           {/* ======================================================== */}
-          <div className="space-y-2 mb-4 sm:mb-5 max-w-3xl mx-auto">
-            <p className="text-[10px] sm:text-xs tracking-[0.24em] uppercase font-bold text-[#4B5E76]">
+          <div className="space-y-1 sm:space-y-1.5 my-2 max-w-3xl mx-auto">
+            <p className="text-[10px] sm:text-xs tracking-[0.22em] uppercase font-bold text-[#0E2A47]">
               This Certificate Is Proudly Presented To
             </p>
-            
-            <div className="py-1">
+
+            <div className="py-0.5">
               <h2 
-                className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black tracking-wide text-[#0E2A47] uppercase leading-tight"
+                className="font-serif text-3xl sm:text-4xl md:text-5xl font-black tracking-wide text-[#0E2A47] uppercase leading-tight"
                 style={{ fontFamily: "'Cinzel', 'Playfair Display', Georgia, Cambria, 'Times New Roman', serif" }}
               >
                 {result.studentName}
@@ -250,84 +275,86 @@ export default function ResultCard({
             </div>
 
             {result.fatherName && result.fatherName.trim() && (
-              <p className="font-serif text-sm sm:text-base text-[#243E5E] italic">
-                Father: <span className="font-bold not-italic text-[#0E2A47]">{result.fatherName.trim()}</span>
+              <p className="font-serif text-sm sm:text-base text-[#0E2A47]">
+                Father: <span className="font-semibold">{result.fatherName.trim()}</span>
               </p>
             )}
 
             {/* Thin green divider below student information */}
-            <div className="w-36 sm:w-48 md:w-64 h-[1.5px] bg-[#0D7B54] mx-auto mt-2" />
+            <div className="w-40 sm:w-56 md:w-72 h-[1.5px] bg-[#0D7B54] mx-auto mt-2" />
           </div>
 
           {/* ======================================================== */}
-          {/* SECTION E: Achievement Statement                         */}
+          {/* E. Achievement Statement                                 */}
           {/* ======================================================== */}
-          <div className="max-w-2xl mx-auto mb-6 px-4">
-            <p className="font-serif text-xs sm:text-sm md:text-base text-[#183153] leading-relaxed italic">
+          <div className="max-w-2xl mx-auto my-1.5 sm:my-2 px-4">
+            <p className="font-serif text-xs sm:text-sm md:text-base font-semibold text-[#0E2A47] leading-relaxed">
               {achievementStatement}
             </p>
           </div>
 
           {/* ======================================================== */}
-          {/* SECTION F: Result Information Section (2 Columns)        */}
+          {/* F. Two-Column Result Information Section                 */}
           {/* ======================================================== */}
-          <div className="max-w-3xl mx-auto my-6 px-4 sm:px-7 py-4 bg-[#FAF7F2]/90 rounded-md border border-[#0D7B54]/30 shadow-2xs">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 relative text-left">
+          <div className="max-w-2xl sm:max-w-3xl mx-auto my-3 sm:my-4 px-4 sm:px-6 w-full">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 sm:gap-x-12 gap-y-1.5 relative text-xs sm:text-sm text-left">
               {/* LEFT COLUMN: Performance & Evaluation */}
-              <div className="space-y-2 text-xs sm:text-sm">
+              <div className="space-y-1.5">
                 {result.obtainedMarks !== undefined && (
-                  <div className="flex items-center justify-between border-b border-[#0D7B54]/15 pb-1">
-                    <span className="text-[#4B5E76] font-semibold">Marks Scored:</span>
-                    <span className="font-bold text-[#0E2A47] font-mono">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-[#0E2A47]">Marks Scored:</span>
+                    <span className="font-semibold text-[#0E2A47] font-mono">
                       {result.obtainedMarks}{result.totalMarks !== undefined ? ` / ${result.totalMarks}` : ""}
                     </span>
                   </div>
                 )}
 
                 {result.percentage !== undefined && (
-                  <div className="flex items-center justify-between border-b border-[#0D7B54]/15 pb-1">
-                    <span className="text-[#4B5E76] font-semibold">Percentage:</span>
-                    <span className="font-bold text-[#0E2A47] font-mono">{result.percentage}%</span>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-[#0E2A47]">Percentage:</span>
+                    <span className="font-semibold text-[#0E2A47] font-mono">{result.percentage}%</span>
                   </div>
                 )}
 
                 {result.grade && (
-                  <div className="flex items-center justify-between border-b border-[#0D7B54]/15 pb-1">
-                    <span className="text-[#4B5E76] font-semibold">Official Grade:</span>
-                    <span className="font-serif font-black text-sm text-[#0D7B54]">{result.grade}</span>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-[#0E2A47]">Official Grade:</span>
+                    <span className="font-bold text-[#0E2A47]">
+                      {result.grade}{getGradeDescriptor(result.grade)}
+                    </span>
                   </div>
                 )}
 
                 {result.level && (
-                  <div className="flex items-center justify-between border-b border-[#0D7B54]/15 pb-1">
-                    <span className="text-[#4B5E76] font-semibold">Competition Level:</span>
-                    <span className="font-bold text-[#0E2A47]">{result.level}</span>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-[#0E2A47]">Competition Level:</span>
+                    <span className="font-semibold text-[#0E2A47]">{result.level}</span>
                   </div>
                 )}
 
-                {levelDesc && (
+                {classRange && (
                   <div className="flex items-center justify-between">
-                    <span className="text-[#4B5E76] font-semibold">Classes:</span>
-                    <span className="font-medium text-[#0E2A47]">{levelDesc}</span>
+                    <span className="font-bold text-[#0E2A47]">Classes:</span>
+                    <span className="font-semibold text-[#0E2A47]">{classRange}</span>
                   </div>
                 )}
               </div>
 
               {/* Center Thin Green Vertical Line (Desktop) */}
-              <div className="hidden md:block absolute left-1/2 top-1 bottom-1 w-[1px] bg-[#0D7B54]/30 -translate-x-1/2" />
+              <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-[1.5px] bg-[#0D7B54] -translate-x-1/2" />
 
               {/* RIGHT COLUMN: Examination Center & Institutional Details */}
-              <div className="space-y-2 text-xs sm:text-sm">
+              <div className="space-y-1.5">
                 {result.examinationCenter && (
-                  <div className="flex items-center justify-between border-b border-[#0D7B54]/15 pb-1">
-                    <span className="text-[#4B5E76] font-semibold">Examination Center:</span>
-                    <span className="font-bold text-[#0E2A47]">{result.examinationCenter}</span>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-[#0E2A47]">Examination Center:</span>
+                    <span className="font-semibold text-[#0E2A47]">{result.examinationCenter}</span>
                   </div>
                 )}
 
                 {result.schoolName && (
-                  <div className="flex items-center justify-between border-b border-[#0D7B54]/15 pb-1">
-                    <span className="text-[#4B5E76] font-semibold">Institution / School:</span>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-[#0E2A47]">Institution / School:</span>
                     <span 
                       className="font-semibold text-[#0E2A47] truncate max-w-[170px] sm:max-w-[220px]" 
                       title={result.schoolName}
@@ -338,23 +365,18 @@ export default function ResultCard({
                 )}
 
                 {result.classOrSection && (
-                  <div className="flex items-center justify-between border-b border-[#0D7B54]/15 pb-1">
-                    <span className="text-[#4B5E76] font-semibold">Class:</span>
-                    <span className="font-medium text-[#0E2A47]">{result.classOrSection}</span>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-[#0E2A47]">Class:</span>
+                    <span className="font-semibold text-[#0E2A47]">{result.classOrSection}</span>
                   </div>
                 )}
 
                 {result.rollNumber && (
-                  <div className="flex items-center justify-between border-b border-[#0D7B54]/15 pb-1">
-                    <span className="text-[#4B5E76] font-semibold">Roll No:</span>
-                    <span className="font-mono font-bold text-[#0E2A47]">{result.rollNumber}</span>
-                  </div>
-                )}
-
-                {result.tehsil && (
                   <div className="flex items-center justify-between">
-                    <span className="text-[#4B5E76] font-semibold">Tehsil:</span>
-                    <span className="font-medium text-[#0E2A47]">{result.tehsil}</span>
+                    <span className="font-bold text-[#0E2A47]">Roll No:</span>
+                    <span className="font-mono font-semibold text-[#0E2A47]">
+                      {result.rollNumber.startsWith("#") ? result.rollNumber : `#${result.rollNumber}`}
+                    </span>
                   </div>
                 )}
               </div>
@@ -362,26 +384,26 @@ export default function ResultCard({
           </div>
 
           {/* ======================================================== */}
-          {/* SECTION G & H: Verification Footer & Official Sponsorship*/}
+          {/* G & H: Verification Footer & Official Sponsorship        */}
           {/* ======================================================== */}
-          <div className="pt-6 sm:pt-8 mt-4 border-t border-[#0D7B54]/25 grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-            {/* LEFT: Examination Committee Verification */}
-            <div className="text-center order-2 md:order-1 space-y-1">
-              <div className="w-36 sm:w-44 h-[1px] bg-[#0E2A47]/40 mx-auto mb-2" />
-              <p className="font-serif text-[11px] sm:text-xs font-bold text-[#0E2A47] uppercase tracking-wider">
+          <div className="pt-4 sm:pt-6 mt-2 grid grid-cols-1 md:grid-cols-3 gap-4 items-end text-center">
+            {/* LEFT: Examination Committee */}
+            <div className="order-2 md:order-1 space-y-1">
+              <div className="w-48 sm:w-56 h-[1.5px] bg-[#0E2A47] mx-auto mb-1.5" />
+              <p className="font-serif text-[10px] sm:text-[11px] font-bold text-[#0E2A47]">
                 Verified by Triple-E Examination Committee
-              </p>
-              <p className="text-[10px] text-[#4B5E76]">
-                District Ghanche, Gilgit-Baltistan
               </p>
             </div>
 
             {/* CENTER: Official Sponsorship by Siachen Mark Marketing Agency */}
-            <div className="text-center order-1 md:order-2 space-y-1.5 pb-1">
-              <div className="w-12 h-[1.5px] bg-[#0D7B54] mx-auto mb-1" />
-              <span className="text-[10px] sm:text-[11px] uppercase tracking-widest text-[#4B5E76] font-bold block">
-                Official Sponsorship by
-              </span>
+            <div className="order-1 md:order-2 space-y-1 pb-1">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <div className="h-[1px] w-8 sm:w-10 bg-[#0D7B54]" />
+                <span className="text-[10px] sm:text-[11px] font-semibold text-[#0E2A47] tracking-wide">
+                  Official Sponsorship by
+                </span>
+                <div className="h-[1px] w-8 sm:w-10 bg-[#0D7B54]" />
+              </div>
               <a
                 href="https://siachen-mark.vercel.app/"
                 target="_blank"
@@ -402,13 +424,13 @@ export default function ResultCard({
             </div>
 
             {/* RIGHT: Controller of Examinations */}
-            <div className="text-center order-3 space-y-1">
-              <div className="w-36 sm:w-44 h-[1px] bg-[#0E2A47]/40 mx-auto mb-2" />
-              <p className="font-serif text-[11px] sm:text-xs font-bold text-[#0E2A47] uppercase tracking-wider">
-                Controller of Examinations
+            <div className="order-3 space-y-0.5">
+              <div className="w-48 sm:w-56 h-[1.5px] bg-[#0E2A47] mx-auto mb-1.5" />
+              <p className="font-serif text-[10px] sm:text-[11px] font-bold text-[#0E2A47] leading-tight">
+                Controller of Examinations • Triple E Organization,
               </p>
-              <p className="text-[10px] text-[#4B5E76]">
-                Triple E Organization • District Ghanche
+              <p className="font-serif text-[10px] sm:text-[11px] font-bold text-[#0E2A47] leading-tight">
+                District Ghanche
               </p>
             </div>
           </div>
@@ -416,7 +438,7 @@ export default function ResultCard({
       </div>
 
       {/* Action Buttons (Excluded from Print) */}
-      <div className="no-print flex flex-wrap items-center justify-center gap-3 pt-3">
+      <div className="no-print flex flex-wrap items-center justify-center gap-3 pt-2">
         <button
           type="button"
           onClick={handlePrint}
