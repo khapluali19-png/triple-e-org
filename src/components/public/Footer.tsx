@@ -33,7 +33,7 @@ export default function Footer({ branding = DEFAULT_BRANDING }: FooterProps) {
                   {branding.organizationName}
                 </h3>
                 <p className="text-xs text-[#183153] font-semibold">
-                  Education · Empowerment · Environment
+                  Education • Empowerment • Environment
                 </p>
                 <p className="text-[11px] text-[#737B85]">
                   District Ghanche, Gilgit-Baltistan, Pakistan
@@ -42,7 +42,7 @@ export default function Footer({ branding = DEFAULT_BRANDING }: FooterProps) {
             </div>
 
             <p className="text-xs sm:text-sm text-[#737B85] leading-relaxed max-w-md">
-              Promoting Education, Empowerment, and Environment through learning, knowledge, and healthy academic competition across District Ghanche.
+              Promoting Education, Empowerment, and Environment through learning, knowledge, and healthy academic competition across District Ghanche, Gilgit-Baltistan, Pakistan.
             </p>
 
             <div className="flex items-center gap-2 text-xs text-[#183153] pt-1">
@@ -64,22 +64,22 @@ export default function Footer({ branding = DEFAULT_BRANDING }: FooterProps) {
               </li>
               <li>
                 <a href="#categories" className="hover:text-[#183153] transition-colors">
-                  • Lower Class Category (Primary)
+                  • Level 1: Junior Students (Classes 4–8)
                 </a>
               </li>
               <li>
                 <a href="#categories" className="hover:text-[#183153] transition-colors">
-                  • Middle Class Category (Junior)
+                  • Level 2: Senior Students (Classes 8–12)
                 </a>
               </li>
               <li>
                 <a href="#categories" className="hover:text-[#183153] transition-colors">
-                  • Overall Championship Category
+                  • Level 3: Open Competition
                 </a>
               </li>
               <li>
                 <a href="#instructions" className="hover:text-[#183153] transition-colors">
-                  • Guidelines &amp; Evaluation Rules
+                  • How to Check Your Result
                 </a>
               </li>
             </ul>
@@ -95,7 +95,7 @@ export default function Footer({ branding = DEFAULT_BRANDING }: FooterProps) {
                 Triple E Examination &amp; Evaluation Board
               </p>
               <p>
-                District Ghanche, Gilgit-Baltistan
+                District Ghanche, Gilgit-Baltistan, Pakistan
               </p>
               <p className="text-[11px] text-slate-500 pt-1">
                 All records are verified and synchronized directly with the official Google Sheets master ledger.
@@ -114,14 +114,14 @@ export default function Footer({ branding = DEFAULT_BRANDING }: FooterProps) {
 
         {/* Minimal Copyright Line */}
         <div className="mt-10 pt-6 border-t border-[#E6E9EE] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#737B85] text-center sm:text-left">
-          <p>© {currentYear} {branding.organizationName} • District Ghanche, Gilgit-Baltistan. All Rights Reserved.</p>
+          <p>© {currentYear} {branding.organizationName} • District Ghanche, Gilgit-Baltistan, Pakistan. All Rights Reserved.</p>
           <p className="text-[11px] text-slate-400">
             {branding.competitionTitle} • Official Examination System
           </p>
         </div>
       </div>
 
-      {/* The Very Bottom: Siachen Mark Agency Partner Attribution */}
+      {/* The Very Bottom: Siachen Mark Marketing Agency Partner Attribution */}
       {partner.enabled && (
         <div className="border-t border-[#E6E9EE] bg-[#F7F8FA] py-4 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-3 text-center sm:text-left">
@@ -130,13 +130,13 @@ export default function Footer({ branding = DEFAULT_BRANDING }: FooterProps) {
               target="_blank"
               rel="noopener noreferrer"
               className="group flex flex-col sm:flex-row items-center gap-3 focus:outline-none focus:ring-1 focus:ring-[#183153] rounded-lg p-1 transition-all"
-              aria-label={`${partner.partnerName || "Siachen Mark Agency"} - ${partner.tagline || "Designed & Developed by Siachen Mark Agency"}`}
+              aria-label={`${partner.partnerName || "Siachen Mark Marketing Agency"} - ${partner.tagline || "Official Sponsorship by Siachen Mark Marketing Agency"}`}
             >
               {/* Authentic Siachen Mark Logo with preserved 1:1 aspect ratio */}
               <div className="relative w-8 h-8 rounded-md overflow-hidden bg-white p-0.5 border border-[#E6E9EE] group-hover:border-[#183153] shadow-xs transition-colors shrink-0">
                 <Image
                   src={partner.partnerLogoUrl || "/images/logos/siachen-mark-logo.jpg"}
-                  alt={partner.partnerName || "Siachen Mark Agency"}
+                  alt={partner.partnerName || "Siachen Mark Marketing Agency"}
                   fill
                   sizes="32px"
                   className="object-contain"
@@ -147,7 +147,7 @@ export default function Footer({ branding = DEFAULT_BRANDING }: FooterProps) {
               <div className="space-y-0.5">
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                   <span className="font-heading font-semibold text-xs sm:text-sm text-[#20252B] group-hover:text-[#183153] transition-colors">
-                    {partner.tagline || "Designed & Developed by Siachen Mark Agency"}
+                    {partner.tagline || "Official Sponsorship by Siachen Mark Marketing Agency"}
                   </span>
                   <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-white text-[#183153] border border-[#E6E9EE]">
                     {partner.location || "Islamabad"}

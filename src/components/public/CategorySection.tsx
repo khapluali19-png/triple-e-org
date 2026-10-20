@@ -1,26 +1,27 @@
 import { CATEGORIES } from "@/lib/constants";
-import { BookOpen, Clock, Award, ArrowRight } from "lucide-react";
+import { BookOpen, Clock, ArrowRight } from "lucide-react";
 
 export default function CategorySection() {
   return (
-    <section className="py-16 sm:py-24 bg-white border-b border-[#E6E9EE]">
+    <section id="categories" className="py-16 sm:py-24 bg-white border-b border-[#E6E9EE] scroll-mt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-3">
           <p className="text-xs font-semibold uppercase tracking-widest text-[#183153]">
-            Curriculum &amp; Academic Tiers
+            Competition Levels
           </p>
           <h2 className="font-heading text-3xl sm:text-4xl font-light text-[#183153] tracking-tight">
-            Academic Competition <span className="font-semibold text-[#20252B]">Tiers &amp; Syllabus</span>
+            Academic Competition <span className="font-semibold text-[#20252B]">Levels &amp; Syllabus</span>
           </h2>
           <p className="text-[#737B85] text-sm sm:text-base leading-relaxed">
-            The Triple E 2nd Quiz Competition assesses academic rigor across three tiered curricula, ensuring age-appropriate evaluation and fair benchmarking across District Ghanche.
+            The Triple E Organization 2nd Quiz Competition is structured into three competition levels, providing an opportunity for young learners and senior scholars across District Ghanche to demonstrate their knowledge.
           </p>
         </div>
 
         {/* Categories Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {CATEGORIES.map((cat) => {
+            const isLevel3 = cat.grades === "Open to all";
             return (
               <div
                 key={cat.id}
@@ -32,7 +33,7 @@ export default function CategorySection() {
                       {cat.subtitle}
                     </span>
                     <h3 className="font-heading text-xl font-bold text-[#20252B] mt-1">
-                      {cat.title}
+                      {cat.subtitle}: {cat.title}
                     </h3>
                     <p className="text-xs text-[#737B85] mt-2 leading-relaxed">
                       {cat.description}
@@ -42,7 +43,9 @@ export default function CategorySection() {
                   {/* Tier details */}
                   <div className="grid grid-cols-2 gap-3 py-3 border-y border-[#E6E9EE] text-xs">
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-[#737B85] block">Target Tier</span>
+                      <span className="text-[10px] uppercase font-bold text-[#737B85] block">
+                        {isLevel3 ? "Eligibility" : "Eligible Classes"}
+                      </span>
                       <span className="font-semibold text-[#20252B] mt-0.5 block">{cat.grades}</span>
                     </div>
                     <div>

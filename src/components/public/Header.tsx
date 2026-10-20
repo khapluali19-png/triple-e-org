@@ -34,7 +34,7 @@ export default function Header({ branding = DEFAULT_BRANDING }: HeaderProps) {
                 {branding.organizationName}
               </span>
               <span className="text-[10px] text-[#737B85] tracking-wider uppercase font-medium hidden sm:block">
-                District Ghanche, Gilgit-Baltistan
+                {branding.organizationRegion || "District Ghanche, Gilgit-Baltistan, Pakistan"}
               </span>
             </div>
           </Link>
@@ -57,13 +57,13 @@ export default function Header({ branding = DEFAULT_BRANDING }: HeaderProps) {
               href="/#categories"
               className="text-sm font-medium text-[#737B85] hover:text-[#183153] transition-colors"
             >
-              Result Categories
+              Competition Levels
             </Link>
             <Link
               href="/#instructions"
               className="text-sm font-medium text-[#737B85] hover:text-[#183153] transition-colors"
             >
-              Instructions
+              How to Check
             </Link>
           </nav>
 
@@ -110,14 +110,14 @@ export default function Header({ branding = DEFAULT_BRANDING }: HeaderProps) {
             onClick={() => setMobileMenuOpen(false)}
             className="block px-3 py-2 rounded-lg text-sm font-medium text-[#737B85] hover:bg-slate-50 hover:text-[#183153]"
           >
-            Result Categories
+            Competition Levels
           </Link>
           <Link
             href="/#instructions"
             onClick={() => setMobileMenuOpen(false)}
             className="block px-3 py-2 rounded-lg text-sm font-medium text-[#737B85] hover:bg-slate-50 hover:text-[#183153]"
           >
-            Instructions
+            How to Check
           </Link>
           <div className="pt-2">
             <Link

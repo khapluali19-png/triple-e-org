@@ -43,7 +43,7 @@ export default function Hero({ branding = DEFAULT_BRANDING }: HeroProps) {
             {/* Initiative Description */}
             <p className="text-base sm:text-lg text-[#737B85] leading-relaxed max-w-xl font-normal">
               {branding.competitionDescription ||
-                "An initiative by Triple E Organization, promoting Education, Empowerment, and Environment through learning, knowledge, and healthy academic competition in District Ghanche, Gilgit-Baltistan."}
+                "An initiative by Triple E Organization, promoting Education, Empowerment, and Environment through learning, knowledge, and healthy academic competition in District Ghanche, Gilgit-Baltistan, Pakistan."}
             </p>
 
             {/* Result Lookup Action Button */}
@@ -60,7 +60,7 @@ export default function Hero({ branding = DEFAULT_BRANDING }: HeroProps) {
                 href="#categories"
                 className="inline-flex items-center justify-center px-5 py-3 rounded-lg text-sm font-medium text-[#20252B] hover:text-[#183153] border border-[#E6E9EE] hover:border-slate-400 bg-white hover:bg-[#F7F8FA] transition-colors"
               >
-                Result Categories
+                Competition Levels
               </a>
             </div>
 
@@ -87,10 +87,10 @@ export default function Hero({ branding = DEFAULT_BRANDING }: HeroProps) {
 
             <div className="mt-4 text-center space-y-0.5">
               <p className="text-xs font-semibold text-[#183153] tracking-wide uppercase">
-                Education · Empowerment · Environment
+                Education • Empowerment • Environment
               </p>
               <p className="text-[11px] text-[#737B85]">
-                District Ghanche, Gilgit-Baltistan
+                District Ghanche, Gilgit-Baltistan, Pakistan
               </p>
             </div>
           </div>
