@@ -173,190 +173,240 @@ export default function ResultCard({
   const classRange = getCleanClassRange(result.level, result.levelDescription);
   const achievementStatement = getAchievementStatement(result);
 
-  const handlePrint = () => {
-    if (typeof window !== "undefined") {
-      window.print();
+  const handlePrint = async () => {
+    if (typeof window === "undefined") return;
+
+    try {
+      // 1. Ensure all certificate images (Triple E logo, Siachen Mark logo) are loaded and decoded
+      const images = Array.from(
+        document.querySelectorAll(".certificate-print-root img")
+      ) as HTMLImageElement[];
+
+      await Promise.all(
+        images.map((img) => {
+          if (img.complete && img.naturalWidth > 0) {
+            if ("decode" in img) {
+              return img.decode().catch(() => {});
+            }
+            return Promise.resolve();
+          }
+          return new Promise<void>((resolve) => {
+            img.onload = () => {
+              if ("decode" in img) {
+                img.decode().then(resolve).catch(() => resolve());
+              } else {
+                resolve();
+              }
+            };
+            img.onerror = () => resolve();
+          });
+        })
+      );
+
+      // 2. Wait for web fonts if available
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready;
+      }
+    } catch {
+      // Continue to print even if pre-decode promise rejects
     }
+
+    // Small delay to ensure the browser paint pipeline is completely finished
+    setTimeout(() => {
+      window.print();
+    }, 120);
   };
 
   return (
     <div className="w-full max-w-5xl mx-auto space-y-6 text-center">
       {/* Printable Certificate Canvas (Exact Landscape A4 Single Page Ratio: 297mm x 210mm) */}
       <div 
-        className="certificate-print-root relative w-full bg-white text-[#0E2A47] p-5 sm:p-9 md:p-12 shadow-2xl transition-all overflow-hidden border border-slate-200"
+        className="certificate-print-root relative w-full bg-white text-[#0E2A47] p-5 sm:p-8 md:p-10 shadow-2xl transition-all border border-slate-200"
         style={{
           boxShadow: "0 20px 45px -15px rgba(14, 42, 71, 0.2), 0 0 0 1px rgba(14, 42, 71, 0.05)",
         }}
       >
-        {/* Thin Green Perimeter Border (Inset 18-22px from all sides) */}
-        <div className="absolute inset-[14px] sm:inset-[18px] md:inset-[22px] border-[1.5px] border-[#0D7B54] pointer-events-none z-0" />
+        {/* Thin Green Perimeter Border (Inset 14-20px from all sides) */}
+        <div className="cert-perimeter-border absolute inset-[12px] sm:inset-[16px] md:inset-[20px] border-[1.5px] border-[#0D7B54] pointer-events-none z-0" />
 
         {/* 4 Geometric Corner Ribbon Banners */}
-        <CertificateCorner className="absolute top-0 left-0 w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 z-10 pointer-events-none select-none" />
-        <CertificateCorner className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 scale-x-[-1] z-10 pointer-events-none select-none" />
-        <CertificateCorner className="absolute bottom-0 left-0 w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 scale-y-[-1] z-10 pointer-events-none select-none" />
-        <CertificateCorner className="absolute bottom-0 right-0 w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 scale-x-[-1] scale-y-[-1] z-10 pointer-events-none select-none" />
+        <CertificateCorner className="cert-corner cert-corner-tl absolute top-0 left-0 w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36 z-5 pointer-events-none select-none" />
+        <CertificateCorner className="cert-corner cert-corner-tr absolute top-0 right-0 w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36 scale-x-[-1] z-5 pointer-events-none select-none" />
+        <CertificateCorner className="cert-corner cert-corner-bl absolute bottom-0 left-0 w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36 scale-y-[-1] z-5 pointer-events-none select-none" />
+        <CertificateCorner className="cert-corner cert-corner-br absolute bottom-0 right-0 w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36 scale-x-[-1] scale-y-[-1] z-5 pointer-events-none select-none" />
 
         {/* Soft Sage-Green Botanical Laurel Leaves along Left and Right Margins */}
-        <SideLeaves className="absolute left-4 sm:left-6 md:left-8 top-1/2 -translate-y-1/2 w-14 sm:w-18 md:w-22 h-auto pointer-events-none select-none z-0" />
-        <SideLeaves className="absolute right-4 sm:right-6 md:right-8 top-1/2 -translate-y-1/2 w-14 sm:w-18 md:w-22 h-auto scale-x-[-1] pointer-events-none select-none z-0" />
+        <SideLeaves className="cert-leaves cert-leaves-l absolute left-3 sm:left-5 md:left-7 top-1/2 -translate-y-1/2 w-12 sm:w-16 md:w-20 h-auto pointer-events-none select-none z-0" />
+        <SideLeaves className="cert-leaves cert-leaves-r absolute right-3 sm:right-5 md:right-7 top-1/2 -translate-y-1/2 w-12 sm:w-16 md:w-20 h-auto scale-x-[-1] pointer-events-none select-none z-0" />
 
         {/* Certificate Content (Z-Index above borders & leaves) */}
-        <div className="relative z-10 flex flex-col justify-between max-w-4xl mx-auto py-2 sm:py-3">
+        <div className="certificate-inner-content relative z-10 w-full h-full flex flex-col justify-between max-w-4xl mx-auto py-1 sm:py-2">
           {/* ======================================================== */}
-          {/* A. Top Organization Logo                                 */}
+          {/* 1. TOP BRANDING & COMPETITION HEADING                    */}
           {/* ======================================================== */}
-          <div className="flex flex-col items-center justify-center mb-2 sm:mb-3">
-            <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28">
+          <div className="cert-section-top flex flex-col items-center justify-center text-center">
+            {/* Organization Logo */}
+            <div className="cert-logo-container relative w-16 h-16 sm:w-20 sm:h-20 md:w-22 md:h-22 mx-auto mb-1.5 sm:mb-2">
               <Image
                 src={branding.logoUrl || "/images/logos/triple-e-logo.jpg"}
                 alt={branding.organizationName || "Triple E Organization"}
                 fill
-                sizes="(max-width: 640px) 80px, (max-width: 768px) 96px, 112px"
+                sizes="(max-width: 640px) 64px, (max-width: 768px) 80px, 96px"
                 className="object-contain"
                 priority
+                unoptimized
               />
             </div>
-          </div>
 
-          {/* ======================================================== */}
-          {/* B. Main Certificate Heading                              */}
-          {/* ======================================================== */}
-          <div className="space-y-1 mb-2 sm:mb-3">
+            {/* Main Heading */}
             <h1 
-              className="font-serif text-3xl sm:text-5xl md:text-6xl font-bold tracking-[0.08em] sm:tracking-[0.11em] text-[#0E2A47] uppercase leading-none"
+              className="cert-main-title font-serif text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-[0.08em] sm:tracking-[0.1em] text-[#0E2A47] uppercase leading-none"
               style={{ fontFamily: "'Cinzel', 'Playfair Display', Georgia, Cambria, 'Times New Roman', serif" }}
             >
               Certificate
             </h1>
 
-            <div className="flex items-center justify-center gap-3 sm:gap-6 pt-1 sm:pt-2">
-              <div className="h-[1.5px] w-14 sm:w-24 md:w-36 bg-[#0D7B54]" />
+            {/* Flanked OF ACHIEVEMENT */}
+            <div className="cert-sub-title-wrapper flex items-center justify-center gap-3 sm:gap-5 pt-1">
+              <div className="cert-sub-title-line h-[1.5px] w-12 sm:w-20 md:w-28 bg-[#0D7B54]" />
               <span 
-                className="font-serif text-xs sm:text-base md:text-lg font-bold tracking-[0.25em] sm:tracking-[0.32em] text-[#0E2A47] uppercase"
+                className="cert-sub-title-text font-serif text-xs sm:text-sm md:text-base font-bold tracking-[0.25em] sm:tracking-[0.3em] text-[#0E2A47] uppercase"
                 style={{ fontFamily: "'Cinzel', 'Playfair Display', Georgia, Cambria, 'Times New Roman', serif" }}
               >
                 Of Achievement
               </span>
-              <div className="h-[1.5px] w-14 sm:w-24 md:w-36 bg-[#0D7B54]" />
+              <div className="cert-sub-title-line h-[1.5px] w-12 sm:w-20 md:w-28 bg-[#0D7B54]" />
             </div>
-          </div>
 
-          {/* ======================================================== */}
-          {/* C. Competition Information                               */}
-          {/* ======================================================== */}
-          <div className="space-y-0.5 sm:space-y-1 mb-2">
-            <p className="font-serif text-xs sm:text-sm md:text-base font-bold text-[#0E2A47] tracking-wide">
-              {branding.competitionEdition || "2nd Quiz Competition"} • District Ghanche, Gilgit-Baltistan
+            {/* Competition Details */}
+            <p className="cert-competition-title font-serif text-xs sm:text-sm font-bold text-[#0E2A47] tracking-wide mt-1">
+              {branding.competitionEdition || "2nd Quiz Competition"} • District {result.district || "Ghanche"}, Gilgit-Baltistan
             </p>
-            <p className="text-[11px] sm:text-xs md:text-sm font-semibold text-[#0D7B54] tracking-[0.14em] uppercase">
+            <p className="cert-motto-text text-[10px] sm:text-xs font-semibold text-[#0D7B54] tracking-[0.14em] uppercase mt-0.5">
               Education • Empowerment • Environment
             </p>
-            <div className="pt-1 flex justify-center">
+            <div className="cert-leaf-motif pt-0.5 sm:pt-1 flex justify-center">
               <CenterLeafMotif />
             </div>
           </div>
 
           {/* ======================================================== */}
-          {/* D. Student Presentation                                  */}
+          {/* 2. STUDENT PRESENTATION & IDENTITY                       */}
           {/* ======================================================== */}
-          <div className="space-y-1 sm:space-y-1.5 my-2 max-w-3xl mx-auto">
-            <p className="text-[10px] sm:text-xs tracking-[0.22em] uppercase font-bold text-[#0E2A47]">
+          <div className="cert-section-student text-center max-w-3xl mx-auto my-1.5 sm:my-2 w-full">
+            <p className="cert-presented-to text-[10px] sm:text-xs tracking-[0.22em] uppercase font-bold text-[#0E2A47] mb-1">
               This Certificate Is Proudly Presented To
             </p>
 
-            <div className="py-0.5">
-              <h2 
-                className="font-serif text-3xl sm:text-4xl md:text-5xl font-black tracking-wide text-[#0E2A47] uppercase leading-tight"
-                style={{ fontFamily: "'Cinzel', 'Playfair Display', Georgia, Cambria, 'Times New Roman', serif" }}
-              >
-                {result.studentName}
-              </h2>
-            </div>
+            <h2 
+              className="cert-student-name font-serif text-2xl sm:text-3xl md:text-4xl font-black tracking-wide text-[#0E2A47] uppercase leading-tight my-1 break-words max-w-xl mx-auto"
+              style={{ fontFamily: "'Cinzel', 'Playfair Display', Georgia, Cambria, 'Times New Roman', serif" }}
+            >
+              {result.studentName}
+            </h2>
 
             {result.fatherName && result.fatherName.trim() && (
-              <p className="font-serif text-sm sm:text-base text-[#0E2A47]">
+              <p className="cert-father-name font-serif text-xs sm:text-sm md:text-base text-[#0E2A47] my-0.5">
                 Father: <span className="font-semibold">{result.fatherName.trim()}</span>
               </p>
             )}
 
             {/* Thin green divider below student information */}
-            <div className="w-40 sm:w-56 md:w-72 h-[1.5px] bg-[#0D7B54] mx-auto mt-2" />
-          </div>
+            <div className="cert-student-divider w-36 sm:w-48 md:w-64 h-[1.5px] bg-[#0D7B54] mx-auto my-1.5" />
 
-          {/* ======================================================== */}
-          {/* E. Achievement Statement                                 */}
-          {/* ======================================================== */}
-          <div className="max-w-2xl mx-auto my-1.5 sm:my-2 px-4">
-            <p className="font-serif text-xs sm:text-sm md:text-base font-semibold text-[#0E2A47] leading-relaxed">
+            {/* Achievement Statement */}
+            <p className="cert-achievement-statement font-serif text-xs sm:text-sm font-semibold text-[#0E2A47] leading-relaxed max-w-2xl mx-auto px-4 mt-1">
               {achievementStatement}
             </p>
           </div>
 
           {/* ======================================================== */}
-          {/* F. Two-Column Result Information Section                 */}
+          {/* 3. TWO-COLUMN RESULT DETAILS (CENTERED DIVIDER)          */}
           {/* ======================================================== */}
-          <div className="max-w-2xl sm:max-w-3xl mx-auto my-3 sm:my-4 px-4 sm:px-6 w-full">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 sm:gap-x-12 gap-y-1.5 relative text-xs sm:text-sm text-left">
+          <div className="cert-section-results max-w-2xl sm:max-w-3xl mx-auto my-2 sm:my-3 px-4 sm:px-6 w-full">
+            <div className="cert-results-grid grid grid-cols-1 md:grid-cols-2 gap-x-8 sm:gap-x-12 gap-y-1 relative text-xs sm:text-sm text-left">
               {/* LEFT COLUMN: Performance & Evaluation */}
-              <div className="space-y-1.5">
+              <div className="cert-col-left space-y-1">
                 {result.obtainedMarks !== undefined && (
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-[#0E2A47]">Marks Scored:</span>
-                    <span className="font-semibold text-[#0E2A47] font-mono">
+                  <div className="cert-result-row flex items-center justify-between">
+                    <span className="cert-result-label font-bold text-[#0E2A47]">Marks Scored:</span>
+                    <span className="cert-result-value font-semibold text-[#0E2A47] font-mono">
                       {result.obtainedMarks}{result.totalMarks !== undefined ? ` / ${result.totalMarks}` : ""}
                     </span>
                   </div>
                 )}
 
                 {result.percentage !== undefined && (
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-[#0E2A47]">Percentage:</span>
-                    <span className="font-semibold text-[#0E2A47] font-mono">{result.percentage}%</span>
+                  <div className="cert-result-row flex items-center justify-between">
+                    <span className="cert-result-label font-bold text-[#0E2A47]">Percentage:</span>
+                    <span className="cert-result-value font-semibold text-[#0E2A47] font-mono">{result.percentage}%</span>
                   </div>
                 )}
 
                 {result.grade && (
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-[#0E2A47]">Official Grade:</span>
-                    <span className="font-bold text-[#0E2A47]">
+                  <div className="cert-result-row flex items-center justify-between">
+                    <span className="cert-result-label font-bold text-[#0E2A47]">Official Grade:</span>
+                    <span className="cert-result-value font-bold text-[#0E2A47]">
                       {result.grade}{getGradeDescriptor(result.grade)}
                     </span>
                   </div>
                 )}
 
                 {result.level && (
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-[#0E2A47]">Competition Level:</span>
-                    <span className="font-semibold text-[#0E2A47]">{result.level}</span>
+                  <div className="cert-result-row flex items-center justify-between">
+                    <span className="cert-result-label font-bold text-[#0E2A47]">Competition Level:</span>
+                    <span className="cert-result-value font-semibold text-[#0E2A47]">{result.level}</span>
                   </div>
                 )}
 
                 {classRange && (
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-[#0E2A47]">Classes:</span>
-                    <span className="font-semibold text-[#0E2A47]">{classRange}</span>
+                  <div className="cert-result-row flex items-center justify-between">
+                    <span className="cert-result-label font-bold text-[#0E2A47]">Classes:</span>
+                    <span className="cert-result-value font-semibold text-[#0E2A47]">{classRange}</span>
+                  </div>
+                )}
+
+                {result.rank !== undefined && (
+                  <div className="cert-result-row flex items-center justify-between">
+                    <span className="cert-result-label font-bold text-[#0E2A47]">Position / Rank:</span>
+                    <span className="cert-result-value font-bold text-[#065A36]">#{result.rank}</span>
+                  </div>
+                )}
+
+                {result.awardStatus && (
+                  <div className="cert-result-row flex items-center justify-between">
+                    <span className="cert-result-label font-bold text-[#0E2A47]">Standing:</span>
+                    <span className="cert-result-value font-bold text-[#065A36]">{result.awardStatus}</span>
+                  </div>
+                )}
+
+                {result.passFailStatus && !result.awardStatus && (
+                  <div className="cert-result-row flex items-center justify-between">
+                    <span className="cert-result-label font-bold text-[#0E2A47]">Result Status:</span>
+                    <span className={`cert-result-value font-semibold ${result.passFailStatus === "Passed" ? "text-[#065A36]" : "text-[#C52222]"}`}>
+                      {result.passFailStatus}
+                    </span>
                   </div>
                 )}
               </div>
 
-              {/* Center Thin Green Vertical Line (Desktop) */}
-              <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-[1.5px] bg-[#0D7B54] -translate-x-1/2" />
+              {/* Center Thin Green Vertical Line (Desktop/Print) */}
+              <div className="cert-results-divider hidden md:block absolute left-1/2 top-0 bottom-0 w-[1.5px] bg-[#0D7B54] -translate-x-1/2" />
 
               {/* RIGHT COLUMN: Examination Center & Institutional Details */}
-              <div className="space-y-1.5">
+              <div className="cert-col-right space-y-1">
                 {result.examinationCenter && (
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-[#0E2A47]">Examination Center:</span>
-                    <span className="font-semibold text-[#0E2A47]">{result.examinationCenter}</span>
+                  <div className="cert-result-row flex items-center justify-between">
+                    <span className="cert-result-label font-bold text-[#0E2A47]">Examination Center:</span>
+                    <span className="cert-result-value font-semibold text-[#0E2A47]">{result.examinationCenter}</span>
                   </div>
                 )}
 
                 {result.schoolName && (
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-[#0E2A47]">Institution / School:</span>
+                  <div className="cert-result-row flex items-center justify-between">
+                    <span className="cert-result-label font-bold text-[#0E2A47]">Institution / School:</span>
                     <span 
-                      className="font-semibold text-[#0E2A47] truncate max-w-[170px] sm:max-w-[220px]" 
+                      className="cert-result-value font-semibold text-[#0E2A47] truncate max-w-[170px] sm:max-w-[220px]" 
                       title={result.schoolName}
                     >
                       {result.schoolName}
@@ -365,44 +415,73 @@ export default function ResultCard({
                 )}
 
                 {result.classOrSection && (
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-[#0E2A47]">Class:</span>
-                    <span className="font-semibold text-[#0E2A47]">{result.classOrSection}</span>
+                  <div className="cert-result-row flex items-center justify-between">
+                    <span className="cert-result-label font-bold text-[#0E2A47]">Class:</span>
+                    <span className="cert-result-value font-semibold text-[#0E2A47]">{result.classOrSection}</span>
                   </div>
                 )}
 
                 {result.rollNumber && (
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-[#0E2A47]">Roll No:</span>
-                    <span className="font-mono font-semibold text-[#0E2A47]">
+                  <div className="cert-result-row flex items-center justify-between">
+                    <span className="cert-result-label font-bold text-[#0E2A47]">Roll No:</span>
+                    <span className="cert-result-value font-mono font-semibold text-[#0E2A47]">
                       {result.rollNumber.startsWith("#") ? result.rollNumber : `#${result.rollNumber}`}
                     </span>
                   </div>
                 )}
+
+                {result.tehsil && (
+                  <div className="cert-result-row flex items-center justify-between">
+                    <span className="cert-result-label font-bold text-[#0E2A47]">Tehsil:</span>
+                    <span className="cert-result-value font-semibold text-[#0E2A47]">{result.tehsil}</span>
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Subject-Wise Breakdown (if present in examination record) */}
+            {result.subjectScores && result.subjectScores.length > 0 && (
+              <div className="cert-subject-scores max-w-2xl mx-auto my-1 px-4 text-center">
+                <div className="flex flex-wrap justify-center gap-2 text-[11px] text-[#0E2A47]">
+                  {result.subjectScores.map((subj, idx) => (
+                    <span key={idx} className="bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+                      <span className="font-semibold">{subj.name}:</span> {subj.obtained}/{subj.total}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Official Remarks (if present in examination record) */}
+            {result.remarks && (
+              <div className="cert-remarks max-w-2xl mx-auto my-1 px-4 text-center">
+                <p className="text-[11px] text-[#0E2A47] italic">
+                  <span className="font-bold not-italic">Remarks:</span> {result.remarks}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* ======================================================== */}
-          {/* G & H: Verification Footer & Official Sponsorship        */}
+          {/* 4. VERIFICATION FOOTER & OFFICIAL SPONSORSHIP            */}
           {/* ======================================================== */}
-          <div className="pt-4 sm:pt-6 mt-2 grid grid-cols-1 md:grid-cols-3 gap-4 items-end text-center">
+          <div className="cert-section-footer pt-3 sm:pt-5 mt-auto grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 items-end text-center w-full">
             {/* LEFT: Examination Committee */}
-            <div className="order-2 md:order-1 space-y-1">
-              <div className="w-48 sm:w-56 h-[1.5px] bg-[#0E2A47] mx-auto mb-1.5" />
-              <p className="font-serif text-[10px] sm:text-[11px] font-bold text-[#0E2A47]">
+            <div className="cert-footer-left order-2 md:order-1 space-y-1">
+              <div className="cert-signature-line w-44 sm:w-52 h-[1.5px] bg-[#0E2A47] mx-auto mb-1" />
+              <p className="cert-signature-text font-serif text-[10px] sm:text-[11px] font-bold text-[#0E2A47]">
                 Verified by Triple-E Examination Committee
               </p>
             </div>
 
             {/* CENTER: Official Sponsorship by Siachen Mark Marketing Agency */}
-            <div className="order-1 md:order-2 space-y-1 pb-1">
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <div className="h-[1px] w-8 sm:w-10 bg-[#0D7B54]" />
-                <span className="text-[10px] sm:text-[11px] font-semibold text-[#0E2A47] tracking-wide">
+            <div className="cert-sponsor-wrapper order-1 md:order-2 space-y-1 pb-1">
+              <div className="cert-sponsor-label-row flex items-center justify-center gap-2 mb-1">
+                <div className="cert-sponsor-line h-[1px] w-6 sm:w-8 bg-[#0D7B54]" />
+                <span className="cert-sponsor-label text-[10px] sm:text-[11px] font-semibold text-[#0E2A47] tracking-wide">
                   Official Sponsorship by
                 </span>
-                <div className="h-[1px] w-8 sm:w-10 bg-[#0D7B54]" />
+                <div className="cert-sponsor-line h-[1px] w-6 sm:w-8 bg-[#0D7B54]" />
               </div>
               <a
                 href="https://siachen-mark.vercel.app/"
@@ -411,25 +490,27 @@ export default function ResultCard({
                 className="inline-block transition-transform hover:scale-105"
                 title="Siachen Mark Marketing Agency"
               >
-                <div className="relative w-32 sm:w-36 h-9 sm:h-10 mx-auto">
+                <div className="cert-sponsor-logo-box relative w-28 sm:w-32 md:w-36 h-8 sm:h-9 md:h-10 mx-auto">
                   <Image
                     src="/images/logos/siachen-mark-logo.jpg"
                     alt="Siachen Mark Marketing Agency"
                     fill
-                    sizes="(max-width: 640px) 128px, 144px"
+                    sizes="(max-width: 640px) 112px, 144px"
                     className="object-contain"
+                    priority
+                    unoptimized
                   />
                 </div>
               </a>
             </div>
 
             {/* RIGHT: Controller of Examinations */}
-            <div className="order-3 space-y-0.5">
-              <div className="w-48 sm:w-56 h-[1.5px] bg-[#0E2A47] mx-auto mb-1.5" />
-              <p className="font-serif text-[10px] sm:text-[11px] font-bold text-[#0E2A47] leading-tight">
+            <div className="cert-footer-right order-3 space-y-0.5">
+              <div className="cert-signature-line w-44 sm:w-52 h-[1.5px] bg-[#0E2A47] mx-auto mb-1" />
+              <p className="cert-signature-text font-serif text-[10px] sm:text-[11px] font-bold text-[#0E2A47] leading-tight">
                 Controller of Examinations • Triple E Organization,
               </p>
-              <p className="font-serif text-[10px] sm:text-[11px] font-bold text-[#0E2A47] leading-tight">
+              <p className="cert-signature-text font-serif text-[10px] sm:text-[11px] font-bold text-[#0E2A47] leading-tight">
                 District Ghanche
               </p>
             </div>

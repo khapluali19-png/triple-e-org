@@ -47,6 +47,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} ${manrope.variable}`}>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&display=swap" rel="stylesheet" />
+      </head>
       <body className="font-sans antialiased min-h-screen bg-white text-[#20252B] flex flex-col selection:bg-navy-100 selection:text-navy-900">
         {children}
       </body>

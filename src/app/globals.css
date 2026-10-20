@@ -49,20 +49,32 @@
   background-size: 24px 24px;
 }
 
-/* Print Styles for Official Certificate of Achievement */
+/* ========================================================================= */
+/* Print Styles for Official Certificate of Achievement                      */
+/* Strict Single-Page Landscape A4 (297mm x 210mm) Layout                     */
+/* ========================================================================= */
 @media print {
   @page {
     size: A4 landscape;
-    margin: 5mm;
+    margin: 0;
   }
 
-  html, body {
-    background: #ffffff !important;
-    color: #0e2a47 !important;
-    margin: 0 !important;
-    padding: 0 !important;
+  *,
+  *::before,
+  *::after {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+  }
+
+  html,
+  body {
+    width: 297mm !important;
+    height: 210mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #0e2a47 !important;
+    overflow: hidden !important;
   }
 
   /* Exclude entire website chrome, navigation, hero, search controls, and unrelated sections */
@@ -82,39 +94,350 @@
     padding: 0 !important;
     margin: 0 !important;
     border: none !important;
+    width: 297mm !important;
+    height: 210mm !important;
+    max-width: 297mm !important;
+    max-height: 210mm !important;
+    overflow: hidden !important;
   }
 
   #result-lookup > div {
-    max-width: 100% !important;
+    max-width: 297mm !important;
+    width: 297mm !important;
     padding: 0 !important;
     margin: 0 !important;
   }
 
+  #result-lookup > div > div.pt-2 {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 297mm !important;
+    height: 210mm !important;
+  }
+
+  /* Main Print Root: Locked to physical A4 landscape (297mm x 210mm) */
   .certificate-print-root {
-    width: 285mm !important;
-    max-width: 285mm !important;
-    height: 198mm !important;
-    max-height: 198mm !important;
+    position: relative !important;
+    width: 297mm !important;
+    max-width: 297mm !important;
+    min-width: 297mm !important;
+    height: 210mm !important;
+    max-height: 210mm !important;
+    min-height: 210mm !important;
     margin: 0 auto !important;
+    padding: 8mm 14mm !important; /* Safe margins: 8mm vertical, 14mm horizontal */
+    box-sizing: border-box !important;
     box-shadow: none !important;
+    border: 1px solid #0e2a47 !important;
+    background-color: #ffffff !important;
     page-break-after: avoid !important;
     page-break-before: avoid !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    background-color: #ffffff !important;
     overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
   }
 
-  .certificate-print-root * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+  /* Perimeter Inner Green Border */
+  .cert-perimeter-border {
+    position: absolute !important;
+    inset: 4.5mm !important;
+    border: 1.5px solid #0d7b54 !important;
+    pointer-events: none !important;
+    z-index: 1 !important;
+  }
+
+  /* 4 Geometric Corner Ribbons */
+  .cert-corner {
+    width: 30mm !important;
+    height: 30mm !important;
+    z-index: 5 !important;
+  }
+
+  /* Soft Sage Laurel Leaves */
+  .cert-leaves {
+    width: 14mm !important;
+    height: auto !important;
+    z-index: 2 !important;
+    opacity: 0.8 !important;
+  }
+
+  /* Inner Flex Container */
+  .certificate-inner-content {
+    position: relative !important;
+    z-index: 10 !important;
+    width: 100% !important;
+    max-width: 260mm !important;
+    height: 100% !important;
+    margin: 0 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Section 1: Header */
+  .cert-section-top {
+    flex-shrink: 0 !important;
+    text-align: center !important;
+    margin-bottom: 1mm !important;
+  }
+
+  .cert-logo-container {
+    width: 18mm !important;
+    height: 18mm !important;
+    margin: 0 auto 1mm auto !important;
+    position: relative !important;
+  }
+
+  .cert-main-title {
+    font-size: 26pt !important;
+    line-height: 1 !important;
+    letter-spacing: 0.08em !important;
+    font-weight: 800 !important;
+    color: #0e2a47 !important;
+    text-transform: uppercase !important;
+    margin: 0 !important;
+    font-family: 'Cinzel', 'Playfair Display', Georgia, Cambria, 'Times New Roman', serif !important;
+  }
+
+  .cert-sub-title-wrapper {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4mm !important;
+    margin-top: 1mm !important;
+    margin-bottom: 1mm !important;
+  }
+
+  .cert-sub-title-line {
+    height: 1.5px !important;
+    width: 28mm !important;
+    background-color: #0d7b54 !important;
+  }
+
+  .cert-sub-title-text {
+    font-size: 8.5pt !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.28em !important;
+    color: #0e2a47 !important;
+    text-transform: uppercase !important;
+    font-family: 'Cinzel', 'Playfair Display', Georgia, Cambria, 'Times New Roman', serif !important;
+  }
+
+  .cert-competition-title {
+    font-size: 8.5pt !important;
+    font-weight: 700 !important;
+    color: #0e2a47 !important;
+    margin: 0.5mm 0 !important;
+  }
+
+  .cert-motto-text {
+    font-size: 7.5pt !important;
+    font-weight: 600 !important;
+    color: #0d7b54 !important;
+    letter-spacing: 0.14em !important;
+    text-transform: uppercase !important;
+    margin: 0.5mm 0 !important;
+  }
+
+  .cert-leaf-motif {
+    margin: 0.8mm auto 0 auto !important;
+  }
+
+  /* Section 2: Student Presentation */
+  .cert-section-student {
+    flex-shrink: 0 !important;
+    text-align: center !important;
+    margin: 1mm auto !important;
+    max-width: 220mm !important;
+  }
+
+  .cert-presented-to {
+    font-size: 7.5pt !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.22em !important;
+    color: #0e2a47 !important;
+    text-transform: uppercase !important;
+    margin-bottom: 0.8mm !important;
+  }
+
+  .cert-student-name {
+    font-size: 20pt !important;
+    font-weight: 900 !important;
+    line-height: 1.1 !important;
+    color: #0e2a47 !important;
+    text-transform: uppercase !important;
+    margin: 0.8mm 0 !important;
+    font-family: 'Cinzel', 'Playfair Display', Georgia, Cambria, 'Times New Roman', serif !important;
+  }
+
+  .cert-father-name {
+    font-size: 8.5pt !important;
+    color: #0e2a47 !important;
+    margin: 0.4mm 0 !important;
+  }
+
+  .cert-student-divider {
+    width: 45mm !important;
+    height: 1.5px !important;
+    background-color: #0d7b54 !important;
+    margin: 1.2mm auto !important;
+  }
+
+  .cert-achievement-statement {
+    font-size: 8.5pt !important;
+    font-weight: 600 !important;
+    color: #0e2a47 !important;
+    margin: 0.8mm auto !important;
+  }
+
+  /* Section 3: Two-Column Result Details */
+  .cert-section-results {
+    flex-shrink: 0 !important;
+    width: 100% !important;
+    max-width: 215mm !important;
+    margin: 1.2mm auto !important;
+  }
+
+  .cert-results-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1.5px 1fr !important;
+    column-gap: 6mm !important;
+    align-items: stretch !important;
+    font-size: 8pt !important;
+  }
+
+  .cert-col-left,
+  .cert-col-right {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    gap: 0.8mm !important;
+  }
+
+  .cert-results-divider {
+    display: block !important;
+    height: 100% !important;
+    min-height: 22mm !important;
+    width: 1.5px !important;
+    background-color: #0d7b54 !important;
+    position: static !important;
+    transform: none !important;
+  }
+
+  .cert-result-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 0 !important;
+    line-height: 1.25 !important;
+    font-size: 8pt !important;
+  }
+
+  .cert-result-label {
+    font-weight: 700 !important;
+    color: #0e2a47 !important;
+    white-space: nowrap !important;
+  }
+
+  .cert-result-value {
+    font-weight: 600 !important;
+    color: #0e2a47 !important;
+    text-align: right !important;
+  }
+
+  .cert-subject-scores {
+    font-size: 7pt !important;
+    margin-top: 1mm !important;
+  }
+
+  .cert-remarks {
+    font-size: 7pt !important;
+    color: #0e2a47 !important;
+    font-style: italic !important;
+    margin-top: 0.8mm !important;
+    text-align: center !important;
+  }
+
+  /* Section 4: Footer Verification & Sponsorship */
+  .cert-section-footer {
+    flex-shrink: 0 !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr 1fr !important;
+    gap: 4mm !important;
+    align-items: end !important;
+    text-align: center !important;
+    width: 100% !important;
+    margin-top: auto !important;
+    padding-bottom: 1.5mm !important;
+  }
+
+  .cert-footer-left,
+  .cert-footer-right {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+  }
+
+  .cert-signature-line {
+    width: 42mm !important;
+    height: 1.5px !important;
+    background-color: #0e2a47 !important;
+    margin: 0 auto 1.2mm auto !important;
+  }
+
+  .cert-signature-text {
+    font-size: 7pt !important;
+    font-weight: 700 !important;
+    color: #0e2a47 !important;
+    line-height: 1.25 !important;
+  }
+
+  .cert-sponsor-wrapper {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+
+  .cert-sponsor-label-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 2mm !important;
+    margin-bottom: 1mm !important;
+  }
+
+  .cert-sponsor-line {
+    height: 1px !important;
+    width: 7mm !important;
+    background-color: #0d7b54 !important;
+  }
+
+  .cert-sponsor-label {
+    font-size: 7pt !important;
+    font-weight: 600 !important;
+    color: #0e2a47 !important;
+    letter-spacing: 0.05em !important;
+    white-space: nowrap !important;
+  }
+
+  .cert-sponsor-logo-box {
+    width: 32mm !important;
+    height: 9mm !important;
+    margin: 0 auto !important;
+    position: relative !important;
   }
 
   img {
     max-width: 100% !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    image-rendering: -webkit-optimize-contrast !important;
   }
 }
