@@ -19,18 +19,47 @@ export interface SubjectScore {
   total: number;
 }
 
+export type CenterId = 
+  | "keris"
+  | "kharfaq"
+  | "ghwari"
+  | "kuro"
+  | "kharkoo"
+  | "barah"
+  | "khaplu"
+  | "chorbat"
+  | "ghursay"
+  | "talis"
+  | "kanday"
+  | "hushe"
+  | "thagus"
+  | "dumsum"
+  | "special-school";
+
+export interface ExaminationCenterInfo {
+  id: CenterId;
+  name: string;
+  tehsil?: string;
+  description?: string;
+}
+
 export interface StudentResult {
-  rollNumber: string;
+  rollNumber?: string;
   studentName: string;
   fatherName?: string;
-  schoolName: string;
+  schoolName?: string;
+  tehsil?: string;
   district?: string;
   classOrSection?: string;
-  category: CategoryId;
+  examinationCenter?: string;
+  centerId?: string;
+  level?: string; // "Level 1" | "Level 2" | "Level 3"
+  levelDescription?: string; // "Classes 4 to 8" | "Classes 8 to 12" | "Open for all"
+  category?: CategoryId;
   categoryTitle?: string;
-  totalMarks: number;
-  obtainedMarks: number;
-  percentage: number;
+  totalMarks?: number;
+  obtainedMarks?: number;
+  percentage?: number;
   grade?: string;
   passFailStatus?: "Passed" | "Failed" | "Promoted" | "Pending";
   rank?: number;
@@ -39,6 +68,34 @@ export interface StudentResult {
   subjectScores?: SubjectScore[];
   remarks?: string;
   verifiedAt?: string;
+}
+
+export interface CenterColumnMappings {
+  studentName: string; // Column header for Student Name (required)
+  fatherName?: string; // Optional: Father / Guardian Name
+  classOrSection?: string; // Optional: Class
+  schoolName?: string; // Optional: School / Institution
+  tehsil?: string; // Optional: Tehsil
+  totalMarks?: string; // Optional: Total Marks
+  obtainedMarks: string; // Column header for Obtained Marks (required)
+  level?: string; // Optional: Level (Level 1, Level 2, Level 3)
+  rollNumber?: string; // Optional: Roll Number
+}
+
+export interface CenterSheetConnection {
+  centerId: CenterId | string;
+  centerName: string;
+  spreadsheetUrl: string;
+  spreadsheetId: string;
+  worksheetName: string;
+  headerRowIndex: number; // 1-based row number for headings (default: 1)
+  status: "connected" | "disconnected" | "error" | "testing" | "pending";
+  lastTestedAt: string | null;
+  lastSyncedAt: string | null;
+  lastError?: string;
+  columnMappings: CenterColumnMappings;
+  availableWorksheets?: string[];
+  detectedHeaders?: string[];
 }
 
 export interface CategoryColumnMappings {
@@ -73,12 +130,21 @@ export interface CategorySheetConnection {
   detectedHeaders?: string[];
 }
 
+export interface CenterSheetsStore {
+  version: string;
+  updatedAt: string;
+  serviceAccountConfigured: boolean;
+  serviceAccountEmail?: string;
+  centers: Record<string, CenterSheetConnection>;
+}
+
 export interface CategorySheetsStore {
   version: string;
   updatedAt: string;
   serviceAccountConfigured: boolean;
   serviceAccountEmail?: string;
   categories: Record<CategoryId, CategorySheetConnection>;
+  centers?: Record<string, CenterSheetConnection>;
 }
 
 export interface SheetPreviewRow {

@@ -1,14 +1,16 @@
 import fs from "fs";
 import path from "path";
-import { CategoryId, CategorySheetConnection, CategorySheetsStore } from "../types";
+import { CategoryId, CategorySheetConnection, CategorySheetsStore, CenterSheetConnection } from "../types";
+import { DEFAULT_CENTER_SHEETS_CONFIG } from "../constants";
 
 const DATA_DIR = path.join(process.cwd(), "src", "data");
 const CONFIG_FILE = path.join(DATA_DIR, "category-sheets-config.json");
 
 const DEFAULT_STORE: CategorySheetsStore = {
-  version: "2.0.0",
+  version: "2.1.0",
   updatedAt: new Date().toISOString(),
   serviceAccountConfigured: false,
+  centers: DEFAULT_CENTER_SHEETS_CONFIG,
   categories: {
     lower: {
       categoryId: "lower",
@@ -167,6 +169,12 @@ export function getServerCategoryStore(): CategorySheetsStore {
     const raw = fs.readFileSync(CONFIG_FILE, "utf-8");
     const parsed = JSON.parse(raw) as CategorySheetsStore;
 
+    // Ensure centers exist and include all 15 examination centers
+    parsed.centers = {
+      ...DEFAULT_CENTER_SHEETS_CONFIG,
+      ...(parsed.centers || {}),
+    };
+
     // Dynamically update service account indicator from server environment
     parsed.serviceAccountConfigured = !!(
       process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
@@ -218,6 +226,63 @@ export function updateCategoryConnection(
   };
 
   store.categories[categoryId] = merged;
+  saveServerCategoryStore(store);
+  return merged;
+}
+
+export function getServerCenterStore(): Record<string, CenterSheetConnection> {
+  const store = getServerCategoryStore();
+  return store.centers || DEFAULT_CENTER_SHEETS_CONFIG;
+}
+
+export function getCenterConnection(centerId: string): CenterSheetConnection | undefined {
+  const centers = getServerCenterStore();
+  const cleanId = centerId.trim().toLowerCase();
+  return centers[cleanId];
+}
+
+export function updateCenterConnection(
+  centerId: string,
+  updates: Partial<CenterSheetConnection>
+): CenterSheetConnection {
+  const store = getServerCategoryStore();
+  const cleanId = centerId.trim().toLowerCase();
+  if (!store.centers) {
+    store.centers = { ...DEFAULT_CENTER_SHEETS_CONFIG };
+  }
+
+  const existing = store.centers[cleanId] || DEFAULT_CENTER_SHEETS_CONFIG[cleanId] || {
+    centerId: cleanId,
+    centerName: updates.centerName || cleanId,
+    spreadsheetUrl: "",
+    spreadsheetId: "",
+    worksheetName: updates.worksheetName || cleanId,
+    headerRowIndex: 1,
+    status: "disconnected",
+    lastTestedAt: null,
+    lastSyncedAt: null,
+    columnMappings: {
+      studentName: "Name",
+      fatherName: "Father Name",
+      classOrSection: "Class",
+      schoolName: "School",
+      tehsil: "Tehsil",
+      totalMarks: "Total Marks",
+      obtainedMarks: "Obt. Marks",
+      level: "Level",
+      rollNumber: "Roll No",
+    },
+    availableWorksheets: [],
+    detectedHeaders: [],
+  };
+
+  const merged: CenterSheetConnection = {
+    ...existing,
+    ...updates,
+    centerId: cleanId,
+  };
+
+  store.centers[cleanId] = merged;
   saveServerCategoryStore(store);
   return merged;
 }

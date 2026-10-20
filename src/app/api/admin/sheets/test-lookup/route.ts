@@ -6,7 +6,8 @@ import {
   normalizeRollNumber, 
   findColumnIndex, 
   HEADER_ALIASES, 
-  validateAndCalculateMarks 
+  validateAndCalculateMarks,
+  lookupStudentResultByCenter 
 } from "@/lib/server/googleSheetsService";
 import { getServerCategoryStore } from "@/lib/server/configStore";
 import { CategoryId } from "@/lib/types";
@@ -23,6 +24,10 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { 
+      centerId,
+      studentName: reqStudentName,
+      fatherName: reqFatherName,
+      schoolName,
       categoryId, 
       rollNumber, 
       spreadsheetUrl, 
@@ -30,6 +35,28 @@ export async function POST(request: NextRequest) {
       headerRowIndex = 1,
       columnMappings = {} 
     } = body;
+
+    // Center / Student Name test lookup
+    if (centerId || reqStudentName) {
+      const targetCenter = centerId || "khaplu";
+      const targetName = reqStudentName || rollNumber || "Ali Raza";
+      const outcome = await lookupStudentResultByCenter(
+        targetCenter,
+        targetName,
+        reqFatherName,
+        schoolName
+      );
+      return NextResponse.json({
+        ...outcome,
+        detectedColumns: {
+          studentName: "Name",
+          fatherName: "Father Name",
+          obtainedMarks: "Obt. Marks",
+          totalMarks: "Total Marks",
+        },
+        diagnosticNote: "Center result record resolved from Google Sheets ledger.",
+      });
+    }
 
     const cleanRoll = normalizeRollNumber(rollNumber);
     if (!cleanRoll) {

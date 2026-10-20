@@ -5,13 +5,16 @@ import {
   Search, 
   AlertCircle, 
   Loader2, 
-  CheckCircle2, 
   AlertTriangle,
   Clock,
-  Layers
+  School,
+  User,
+  MapPin,
+  HelpCircle,
+  CheckCircle2
 } from "lucide-react";
-import { CategoryId, StudentResult, WebsiteBrandingConfig } from "@/lib/types";
-import { DEFAULT_BRANDING, CATEGORIES } from "@/lib/constants";
+import { StudentResult, WebsiteBrandingConfig } from "@/lib/types";
+import { DEFAULT_BRANDING, EXAMINATION_CENTERS } from "@/lib/constants";
 import { lookupStudentResult } from "@/lib/dataService";
 import ResultCard from "./ResultCard";
 import confetti from "canvas-confetti";
@@ -21,32 +24,37 @@ interface ResultLookupProps {
 }
 
 export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLookupProps) {
-  const [rollNumber, setRollNumber] = useState("");
-  const [category, setCategory] = useState<CategoryId>("lower");
+  const [studentName, setStudentName] = useState("");
+  const [examinationCenter, setExaminationCenter] = useState("khaplu");
+  const [fatherName, setFatherName] = useState("");
+  const [schoolName, setSchoolName] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<{ code?: string; message: string; duplicate?: boolean } | null>(null);
+  const [error, setError] = useState<{ 
+    code?: string; 
+    message: string; 
+    duplicate?: boolean; 
+    ambiguity?: boolean;
+  } | null>(null);
   const [result, setResult] = useState<StudentResult | null>(null);
-  const [isDemoSource, setIsDemoSource] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const handleCategorySelect = (selectedCat: CategoryId) => {
-    setCategory(selectedCat);
-    if (error) setError(null);
-    // Focus the roll number input for immediate typing
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 50);
-  };
 
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
-    const cleanRoll = rollNumber.trim().toUpperCase();
-    if (!cleanRoll) {
+    const cleanName = studentName.trim();
+    if (!cleanName) {
       setError({
-        code: "MISSING_ROLL_NUMBER",
-        message: "Please enter your designated Roll Number (e.g., TE-101 or 0042) to verify your result.",
+        code: "MISSING_STUDENT_NAME",
+        message: "Please enter the Student's Name to look up examination results.",
+      });
+      return;
+    }
+
+    if (!examinationCenter) {
+      setError({
+        code: "MISSING_CENTER",
+        message: "Please select your Examination Center from the dropdown.",
       });
       return;
     }
@@ -56,13 +64,21 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
     setResult(null);
 
     try {
-      const response = await lookupStudentResult(cleanRoll, category);
+      const response = await lookupStudentResult({
+        studentName: cleanName,
+        examinationCenter,
+        fatherName: fatherName.trim() || undefined,
+        schoolName: schoolName.trim() || undefined,
+      });
+
       if (response.success && response.result) {
         setResult(response.result);
-        setIsDemoSource(!!response.isDemo);
 
         // Fire celebratory confetti if high distinction or top 3 rank
-        if (response.result.rank && response.result.rank <= 3) {
+        if (
+          (response.result.rank && response.result.rank <= 3) ||
+          (response.result.percentage && response.result.percentage >= 85)
+        ) {
           try {
             confetti({
               particleCount: 70,
@@ -77,8 +93,9 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
       } else {
         setError({
           code: response.code || "NOT_FOUND",
-          message: response.message || `No result found for Roll Number "${cleanRoll}" in the selected category.`,
+          message: response.message || `No result record found for student "${cleanName}".`,
           duplicate: response.duplicateDetected,
+          ambiguity: response.ambiguityDetected,
         });
       }
     } catch (err: unknown) {
@@ -91,24 +108,31 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
     }
   };
 
-  const handleQuickLookup = (quickRoll: string, quickCategory: CategoryId) => {
-    setRollNumber(quickRoll);
-    setCategory(quickCategory);
+  const handleQuickTest = (name: string, center: string, father?: string, school?: string) => {
+    setStudentName(name);
+    setExaminationCenter(center);
+    setFatherName(father || "");
+    setSchoolName(school || "");
     setError(null);
     setResult(null);
     setLoading(true);
 
     setTimeout(() => {
-      lookupStudentResult(quickRoll, quickCategory)
+      lookupStudentResult({
+        studentName: name,
+        examinationCenter: center,
+        fatherName: father || undefined,
+        schoolName: school || undefined,
+      })
         .then((res) => {
           if (res.success && res.result) {
             setResult(res.result);
-            setIsDemoSource(!!res.isDemo);
           } else {
             setError({
               code: res.code || "NOT_FOUND",
               message: res.message || "Record not found",
               duplicate: res.duplicateDetected,
+              ambiguity: res.ambiguityDetected,
             });
           }
         })
@@ -125,8 +149,8 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
   return (
     <section id="result-lookup" className="py-16 sm:py-24 bg-[#F7F8FA] border-b border-[#E6E9EE]">
       <div id="categories" className="scroll-mt-24" />
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-12">
-        {/* Section Header: Exact wording from Prompt */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-10">
+        {/* Section Header */}
         <div id="result-lookup-header" className="space-y-3 max-w-2xl mx-auto">
           <p className="text-xs font-semibold uppercase tracking-widest text-[#183153]">
             {branding.competitionTitle}
@@ -135,225 +159,212 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
             Find Your <span className="font-semibold text-[#20252B]">Competition Result</span>
           </h2>
           <p className="text-[#737B85] text-sm sm:text-base leading-relaxed">
-            Select your category and enter your roll number to view your result.
+            Select your examination center and enter your name below to view your verified academic standing, percentage, and competition level.
           </p>
         </div>
 
-        {/* Categories & Search Panel (Hidden in Print) */}
-        <div id="result-lookup-form" className="space-y-8">
-          {/* Step 1: Three Distinct Editorial Category Blocks */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-left">
-            {/* Category 1: Lower Class */}
-            <button
-              type="button"
-              onClick={() => handleCategorySelect("lower")}
-              className={`p-6 rounded-xl border text-left transition-all cursor-pointer relative bg-white ${
-                category === "lower"
-                  ? "border-[#183153] shadow-card ring-1 ring-[#183153]"
-                  : "border-[#E6E9EE] hover:border-slate-400 shadow-subtle"
-              }`}
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#183153] block">
-                    Primary Tier • Grades 3 – 5
-                  </span>
-                  <h3 className="font-heading text-xl font-bold text-[#20252B] mt-1">
-                    Lower Class
-                  </h3>
-                  <p className="text-xs text-[#737B85] mt-2 leading-relaxed">
-                    General Science, Basic Mathematics, Environmental Studies &amp; General Knowledge.
-                  </p>
-                </div>
-                {category === "lower" && (
-                  <span className="p-1 rounded-full bg-[#183153] text-white shrink-0">
-                    <CheckCircle2 className="w-4 h-4" />
-                  </span>
-                )}
-              </div>
-              <div className="mt-4 pt-3 border-t border-[#E6E9EE] flex items-center justify-between text-[11px] text-[#737B85]">
-                <span>Total Marks: 100</span>
-                <span className={category === "lower" ? "text-[#183153] font-semibold" : ""}>
-                  {category === "lower" ? "Active Selection" : "Click to Select"}
-                </span>
-              </div>
-            </button>
-
-            {/* Category 2: Middle Class */}
-            <button
-              type="button"
-              onClick={() => handleCategorySelect("middle")}
-              className={`p-6 rounded-xl border text-left transition-all cursor-pointer relative bg-white ${
-                category === "middle"
-                  ? "border-[#183153] shadow-card ring-1 ring-[#183153]"
-                  : "border-[#E6E9EE] hover:border-slate-400 shadow-subtle"
-              }`}
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#183153] block">
-                    Junior Secondary • Grades 6 – 8
-                  </span>
-                  <h3 className="font-heading text-xl font-bold text-[#20252B] mt-1">
-                    Middle Class
-                  </h3>
-                  <p className="text-xs text-[#737B85] mt-2 leading-relaxed">
-                    Integrated Sciences, Mathematics &amp; Logic, Geography &amp; English Comprehension.
-                  </p>
-                </div>
-                {category === "middle" && (
-                  <span className="p-1 rounded-full bg-[#183153] text-white shrink-0">
-                    <CheckCircle2 className="w-4 h-4" />
-                  </span>
-                )}
-              </div>
-              <div className="mt-4 pt-3 border-t border-[#E6E9EE] flex items-center justify-between text-[11px] text-[#737B85]">
-                <span>Total Marks: 100</span>
-                <span className={category === "middle" ? "text-[#183153] font-semibold" : ""}>
-                  {category === "middle" ? "Active Selection" : "Click to Select"}
-                </span>
-              </div>
-            </button>
-
-            {/* Category 3: Overall Championship */}
-            <button
-              type="button"
-              onClick={() => handleCategorySelect("overall")}
-              className={`p-6 rounded-xl border text-left transition-all cursor-pointer relative bg-white ${
-                category === "overall"
-                  ? "border-[#183153] shadow-card ring-1 ring-[#183153]"
-                  : "border-[#E6E9EE] hover:border-slate-400 shadow-subtle"
-              }`}
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#183153] block">
-                    Comprehensive Championship Tier
-                  </span>
-                  <h3 className="font-heading text-xl font-bold text-[#20252B] mt-1">
-                    Overall Category
-                  </h3>
-                  <p className="text-xs text-[#737B85] mt-2 leading-relaxed">
-                    Advanced Sciences, Tech, Mathematics Problem Solving, World History &amp; Sustainability.
-                  </p>
-                </div>
-                {category === "overall" && (
-                  <span className="p-1 rounded-full bg-[#183153] text-white shrink-0">
-                    <CheckCircle2 className="w-4 h-4" />
-                  </span>
-                )}
-              </div>
-              <div className="mt-4 pt-3 border-t border-[#E6E9EE] flex items-center justify-between text-[11px] text-[#737B85]">
-                <span>Total Marks: 100</span>
-                <span className={category === "overall" ? "text-[#183153] font-semibold" : ""}>
-                  {category === "overall" ? "Active Selection" : "Click to Select"}
-                </span>
-              </div>
-            </button>
-          </div>
-
-          {/* Step 2: Roll Number Search Bar */}
-          <div className="bg-white rounded-xl border border-[#E6E9EE] p-6 sm:p-8 shadow-subtle max-w-2xl mx-auto text-left">
-            <form onSubmit={handleSearch} className="space-y-4">
-              <div>
-                <label
-                  htmlFor="rollNumber"
-                  className="block text-xs font-bold uppercase tracking-wider text-[#20252B] mb-2"
-                >
-                  Enter Candidate Roll Number
-                </label>
-                <div className="relative flex flex-col sm:flex-row gap-3">
-                  <div className="relative flex-1">
-                    <input
-                      ref={inputRef}
-                      id="rollNumber"
-                      type="text"
-                      value={rollNumber}
+        {/* Search Form Panel (Hidden in Print) */}
+        <div id="result-lookup-form" className="max-w-3xl mx-auto text-left">
+          <div className="bg-white rounded-2xl border border-[#E6E9EE] p-6 sm:p-8 shadow-card space-y-6">
+            <form onSubmit={handleSearch} className="space-y-5">
+              {/* Row 1: Examination Center Dropdown (Required) & Student Name (Required) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Examination Center Dropdown */}
+                <div className="space-y-1.5">
+                  <label 
+                    htmlFor="examinationCenter" 
+                    className="block text-xs font-bold uppercase tracking-wider text-[#20252B] flex items-center gap-1.5"
+                  >
+                    <MapPin className="w-3.5 h-3.5 text-[#183153]" />
+                    <span>Examination Center <span className="text-red-500">*</span></span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      id="examinationCenter"
+                      value={examinationCenter}
                       onChange={(e) => {
-                        setRollNumber(e.target.value);
+                        setExaminationCenter(e.target.value);
                         if (error) setError(null);
                       }}
-                      placeholder="e.g. TE-101, TE-102, 0042..."
-                      className="w-full px-4 py-3 rounded-lg border border-[#E6E9EE] focus:outline-none focus:border-[#183153] focus:ring-1 focus:ring-[#183153] font-mono text-base uppercase text-[#20252B] placeholder:normal-case placeholder:text-slate-400 placeholder:font-sans transition-all"
-                    />
+                      className="w-full px-4 py-3 rounded-lg border border-[#E6E9EE] bg-white text-sm font-medium text-[#20252B] focus:outline-none focus:border-[#183153] focus:ring-1 focus:ring-[#183153] transition-all cursor-pointer appearance-none pr-10"
+                    >
+                      <option value="">-- Select Examination Center (15 Centers) --</option>
+                      {EXAMINATION_CENTERS.map((center) => (
+                        <option key={center.id} value={center.id}>
+                          {center.name} {center.id === "dumsum" ? "(Unconnected Ledger)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                      <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                        <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd" />
+                      </svg>
+                    </div>
                   </div>
+                  <p className="text-[11px] text-[#737B85]">
+                    Each center searches only its own connected Google Sheet ledger.
+                  </p>
+                </div>
 
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-[#183153] hover:bg-[#12243d] disabled:bg-slate-400 text-white font-semibold text-sm transition-colors cursor-pointer gap-2 shrink-0"
+                {/* Student Name Input */}
+                <div className="space-y-1.5">
+                  <label 
+                    htmlFor="studentName" 
+                    className="block text-xs font-bold uppercase tracking-wider text-[#20252B] flex items-center gap-1.5"
                   >
-                    {loading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin text-white" />
-                        <span>Searching...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Search className="w-4 h-4 text-white" />
-                        <span>Check Result</span>
-                      </>
-                    )}
-                  </button>
+                    <User className="w-3.5 h-3.5 text-[#183153]" />
+                    <span>Student Name <span className="text-red-500">*</span></span>
+                  </label>
+                  <input
+                    ref={inputRef}
+                    id="studentName"
+                    type="text"
+                    value={studentName}
+                    onChange={(e) => {
+                      setStudentName(e.target.value);
+                      if (error) setError(null);
+                    }}
+                    placeholder="e.g. Ali Raza, Fatima Zahra..."
+                    className="w-full px-4 py-3 rounded-lg border border-[#E6E9EE] text-sm text-[#20252B] placeholder:text-slate-400 focus:outline-none focus:border-[#183153] focus:ring-1 focus:ring-[#183153] transition-all"
+                  />
+                  <p className="text-[11px] text-[#737B85]">
+                    Primary search key. Roll number is not required.
+                  </p>
                 </div>
               </div>
 
-              {/* Helpful Input Note */}
-              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#737B85] pt-1">
-                <span>
-                  Searching <strong>{category === "lower" ? "Lower Class" : category === "middle" ? "Middle Class" : "Overall Category"}</strong> ledger only.
-                </span>
-                <span className="font-mono">Leading zeros preserved (e.g. 0042)</span>
+              {/* Row 2: Father's Name (Optional) & School Name (Optional) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+                {/* Father's Name */}
+                <div className="space-y-1.5">
+                  <label 
+                    htmlFor="fatherName" 
+                    className="block text-xs font-bold uppercase tracking-wider text-[#20252B] flex items-center justify-between"
+                  >
+                    <span>Father&apos;s Name</span>
+                    <span className="text-[10px] font-normal lowercase text-slate-400">(optional verification)</span>
+                  </label>
+                  <input
+                    id="fatherName"
+                    type="text"
+                    value={fatherName}
+                    onChange={(e) => {
+                      setFatherName(e.target.value);
+                      if (error) setError(null);
+                    }}
+                    placeholder="e.g. Muhammad Hussain"
+                    className="w-full px-4 py-2.5 rounded-lg border border-[#E6E9EE] text-xs sm:text-sm text-[#20252B] placeholder:text-slate-400 focus:outline-none focus:border-[#183153] focus:ring-1 focus:ring-[#183153] transition-all"
+                  />
+                  <p className="text-[11px] text-[#737B85]">
+                    Recommended if multiple students share your name.
+                  </p>
+                </div>
+
+                {/* School Name */}
+                <div className="space-y-1.5">
+                  <label 
+                    htmlFor="schoolName" 
+                    className="block text-xs font-bold uppercase tracking-wider text-[#20252B] flex items-center justify-between"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <School className="w-3.5 h-3.5 text-[#183153]" />
+                      <span>School Name</span>
+                    </span>
+                    <span className="text-[10px] font-normal lowercase text-slate-400">(optional verification)</span>
+                  </label>
+                  <input
+                    id="schoolName"
+                    type="text"
+                    value={schoolName}
+                    onChange={(e) => {
+                      setSchoolName(e.target.value);
+                      if (error) setError(null);
+                    }}
+                    placeholder="e.g. Govt High School Khaplu"
+                    className="w-full px-4 py-2.5 rounded-lg border border-[#E6E9EE] text-xs sm:text-sm text-[#20252B] placeholder:text-slate-400 focus:outline-none focus:border-[#183153] focus:ring-1 focus:ring-[#183153] transition-all"
+                  />
+                  <p className="text-[11px] text-[#737B85]">
+                    Helps distinguish candidates with identical names.
+                  </p>
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <div className="pt-3">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3.5 rounded-lg bg-[#183153] hover:bg-[#12243d] disabled:bg-slate-400 text-white font-semibold text-sm transition-all cursor-pointer gap-2 shadow-xs"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                      <span>Searching Examination Ledger...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Search className="w-4 h-4 text-white" />
+                      <span>Find Result</span>
+                    </>
+                  )}
+                </button>
               </div>
             </form>
 
-            {/* Quick Test Shortcuts for Evaluation Committee */}
-            <div className="pt-5 mt-5 border-t border-[#E6E9EE]">
+            {/* Quick Test Shortcuts for Demonstration & Testing */}
+            <div className="pt-4 border-t border-[#E6E9EE]">
               <span className="text-[11px] font-semibold text-[#737B85] block mb-2">
-                Sample Examination Records for Testing:
+                Sample Examination Records for Quick Verification:
               </span>
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() => handleQuickLookup("TE-101", "lower")}
-                  className="px-2.5 py-1 rounded-md bg-[#F7F8FA] hover:bg-slate-200 text-[#20252B] text-xs font-mono border border-[#E6E9EE] transition-colors"
+                  onClick={() => handleQuickTest("Ali Raza", "khaplu", "Muhammad Hussain")}
+                  className="px-2.5 py-1 rounded-md bg-[#F7F8FA] hover:bg-slate-200 text-[#20252B] text-xs border border-[#E6E9EE] transition-colors"
                 >
-                  TE-101 (Lower)
+                  Ali Raza (Khaplu, Level 1)
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleQuickLookup("0042", "lower")}
-                  className="px-2.5 py-1 rounded-md bg-[#F7F8FA] hover:bg-slate-200 text-[#20252B] text-xs font-mono border border-[#E6E9EE] transition-colors"
+                  onClick={() => handleQuickTest("Fatima Zahra", "khaplu", "Ghulam Mehdi")}
+                  className="px-2.5 py-1 rounded-md bg-[#F7F8FA] hover:bg-slate-200 text-[#20252B] text-xs border border-[#E6E9EE] transition-colors"
                 >
-                  0042 (Leading 0)
+                  Fatima Zahra (Khaplu, Level 2)
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleQuickLookup("TE-102", "middle")}
-                  className="px-2.5 py-1 rounded-md bg-[#F7F8FA] hover:bg-slate-200 text-[#20252B] text-xs font-mono border border-[#E6E9EE] transition-colors"
+                  onClick={() => handleQuickTest("Kareem Ullah", "khaplu", "Sher Khan")}
+                  className="px-2.5 py-1 rounded-md bg-[#F7F8FA] hover:bg-slate-200 text-[#20252B] text-xs border border-[#E6E9EE] transition-colors"
                 >
-                  TE-102 (Middle)
+                  Kareem Ullah (Khaplu, Level 3)
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleQuickLookup("0088", "middle")}
-                  className="px-2.5 py-1 rounded-md bg-[#F7F8FA] hover:bg-slate-200 text-[#20252B] text-xs font-mono border border-[#E6E9EE] transition-colors"
+                  onClick={() => handleQuickTest("Ilyas Khan", "keris")}
+                  className="px-2.5 py-1 rounded-md bg-[#F7F8FA] hover:bg-slate-200 text-[#20252B] text-xs border border-[#E6E9EE] transition-colors"
                 >
-                  0088 (Middle 0)
+                  Ilyas Khan (Keris)
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleQuickLookup("TE-103", "overall")}
-                  className="px-2.5 py-1 rounded-md bg-[#F7F8FA] hover:bg-slate-200 text-[#20252B] text-xs font-mono border border-[#E6E9EE] transition-colors"
+                  onClick={() => handleQuickTest("Mehdi Hassan", "kharfaq")}
+                  className="px-2.5 py-1 rounded-md bg-[#F7F8FA] hover:bg-slate-200 text-[#20252B] text-xs border border-[#E6E9EE] transition-colors"
                 >
-                  TE-103 (Overall)
+                  Mehdi Hassan (Kharfaq)
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleQuickLookup("0007", "overall")}
-                  className="px-2.5 py-1 rounded-md bg-[#F7F8FA] hover:bg-slate-200 text-[#20252B] text-xs font-mono border border-[#E6E9EE] transition-colors"
+                  onClick={() => handleQuickTest("Muhammad Ali", "khaplu")}
+                  className="px-2.5 py-1 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs border border-amber-200 transition-colors"
                 >
-                  0007 (Overall 0)
+                  Muhammad Ali (Ambiguity Test)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickTest("Student", "dumsum")}
+                  className="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs border border-slate-300 transition-colors"
+                >
+                  Dumsum (Unconnected Center Test)
                 </button>
               </div>
             </div>
@@ -362,49 +373,64 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
 
         {/* Error States Display */}
         {error && (
-          <div className="max-w-2xl mx-auto rounded-xl p-5 border text-left bg-white shadow-subtle animate-in fade-in">
-            {error.code === "NOT_FOUND" ? (
+          <div className="max-w-3xl mx-auto rounded-xl p-5 border text-left bg-white shadow-subtle animate-in fade-in">
+            {error.code === "AMBIGUOUS_STUDENT" ? (
               <div className="flex items-start gap-3.5">
-                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                 <div className="space-y-1">
-                  <h4 className="text-sm font-semibold text-[#20252B]">
-                    Result Not Found in Selected Category
+                  <h4 className="text-sm font-semibold text-amber-900">
+                    Additional Verification Required: Multiple Students Found
+                  </h4>
+                  <p className="text-xs text-amber-800 leading-relaxed">
+                    {error.message}
+                  </p>
+                  <p className="text-[11px] text-slate-500 pt-1">
+                    To protect student privacy and ensure correct scorecard display, please enter your Father&apos;s Name or School Name in the search form above.
+                  </p>
+                </div>
+              </div>
+            ) : error.code === "CENTER_NOT_CONFIGURED" ? (
+              <div className="flex items-start gap-3.5">
+                <Clock className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <h4 className="text-sm font-semibold text-[#183153]">
+                    Examination Center Ledger Not Yet Connected
                   </h4>
                   <p className="text-xs text-[#737B85] leading-relaxed">
                     {error.message}
                   </p>
                   <p className="text-[11px] text-slate-500 pt-1">
-                    Tip: Verify your roll number on your competition admit card, or confirm you have selected the correct category (Lower, Middle, or Overall).
+                    The examination committee is currently synchronizing the spreadsheet for this center. If you are an administrator, configure this center in the Admin Dashboard.
                   </p>
                 </div>
               </div>
-            ) : error.code === "DUPLICATE_ROLL" ? (
+            ) : error.code === "VERIFICATION_FAILED" ? (
               <div className="flex items-start gap-3.5">
-                <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                 <div className="space-y-1">
                   <h4 className="text-sm font-semibold text-red-900">
-                    Record Integrity Warning: Duplicate Roll Number
+                    Verification Mismatch
                   </h4>
                   <p className="text-xs text-red-700 leading-relaxed">
                     {error.message}
                   </p>
                   <p className="text-[11px] text-slate-500 pt-1">
-                    To preserve evaluation integrity, ambiguous records cannot be displayed. Please contact the Triple E Examination Cell.
+                    Please ensure the student name, father&apos;s name, and school name match your official competition registration details.
                   </p>
                 </div>
               </div>
-            ) : error.code === "SHEET_UNAVAILABLE" ? (
+            ) : error.code === "NOT_FOUND" ? (
               <div className="flex items-start gap-3.5">
-                <Clock className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                 <div className="space-y-1">
-                  <h4 className="text-sm font-semibold text-[#183153]">
-                    Category Ledger Synchronization in Progress
+                  <h4 className="text-sm font-semibold text-[#20252B]">
+                    Student Result Not Found
                   </h4>
                   <p className="text-xs text-[#737B85] leading-relaxed">
                     {error.message}
                   </p>
                   <p className="text-[11px] text-slate-500 pt-1">
-                    The examination committee is updating the official records. Please check back shortly.
+                    Tip: Verify your selected Examination Center and ensure your name spelling matches the official competition admit card.
                   </p>
                 </div>
               </div>
@@ -431,7 +457,9 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
               result={result}
               onReset={() => {
                 setResult(null);
-                setRollNumber("");
+                setStudentName("");
+                setFatherName("");
+                setSchoolName("");
                 setError(null);
               }}
               branding={branding}

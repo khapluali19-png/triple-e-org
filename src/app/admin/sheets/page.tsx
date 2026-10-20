@@ -11,41 +11,51 @@ import {
   Save, 
   Check, 
   Unlink, 
-  HelpCircle,
   Copy,
   Table,
   ArrowRight,
-  Layers,
   Sparkles,
-  Info,
-  AlertTriangle
+  AlertTriangle,
+  MapPin,
+  Search,
+  GraduationCap,
+  Building2,
+  User,
+  Layers
 } from "lucide-react";
 import { 
-  CategoryId, 
-  CategorySheetConnection, 
-  CategoryColumnMappings, 
-  SheetPreviewData 
+  CenterId, 
+  CenterSheetConnection, 
+  CenterColumnMappings, 
+  SheetPreviewData,
+  StudentResult 
 } from "@/lib/types";
-
-const CATEGORY_TABS: { id: CategoryId; name: string; subtitle: string; color: string }[] = [
-  { id: "lower", name: "Lower Class", subtitle: "Primary Grades Ledger", color: "emerald" },
-  { id: "middle", name: "Middle Class", subtitle: "Junior Secondary Ledger", color: "blue" },
-  { id: "overall", name: "Overall Championship", subtitle: "Open Championship Ledger", color: "amber" },
-];
+import { 
+  EXAMINATION_CENTERS, 
+  DEFAULT_CENTER_SHEETS_CONFIG,
+  getLevelDescription 
+} from "@/lib/constants";
 
 export default function AdminSheetsPage() {
-  const [activeCategory, setActiveCategory] = useState<CategoryId>("lower");
-  const [connections, setConnections] = useState<Record<CategoryId, CategorySheetConnection> | null>(null);
+  const [activeCenterId, setActiveCenterId] = useState<string>("khaplu");
+  const [centerConnections, setCenterConnections] = useState<Record<string, CenterSheetConnection>>(DEFAULT_CENTER_SHEETS_CONFIG);
   const [loadingConfig, setLoadingConfig] = useState(true);
+  const [searchFilter, setSearchFilter] = useState("");
 
-  // Active form state for selected category
+  // Active form state for selected center
   const [spreadsheetUrl, setSpreadsheetUrl] = useState("");
   const [worksheetName, setWorksheetName] = useState("");
   const [headerRowIndex, setHeaderRowIndex] = useState(1);
-  const [columnMappings, setColumnMappings] = useState<CategoryColumnMappings>({
-    rollNumber: "",
+  const [columnMappings, setColumnMappings] = useState<CenterColumnMappings>({
     studentName: "",
+    fatherName: "",
+    schoolName: "",
+    classOrSection: "",
+    tehsil: "",
+    totalMarks: "",
     obtainedMarks: "",
+    level: "",
+    rollNumber: "",
   });
 
   // Testing & preview state
@@ -63,70 +73,21 @@ export default function AdminSheetsPage() {
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
 
-  // Diagnostic Test Lookup state
-  const [testLookupRoll, setTestLookupRoll] = useState("222");
+  // Diagnostic Test Lookup state for student search
+  const [testStudentName, setTestStudentName] = useState("Ali Raza");
+  const [testFatherName, setTestFatherName] = useState("");
+  const [testSchoolName, setTestSchoolName] = useState("");
+  const [testRollNumber, setTestRollNumber] = useState("");
   const [isTestingLookup, setIsTestingLookup] = useState(false);
   const [lookupDiagnosticResult, setLookupDiagnosticResult] = useState<{
     success: boolean;
     message?: string;
-    result?: {
-      rollNumber: string;
-      studentName: string;
-      fatherName?: string;
-      obtainedMarks: number;
-      totalMarks: number;
-      percentage: number;
-      grade: string;
-    };
-    detectedColumns?: {
-      rollNumber?: string | null;
-      studentName?: string | null;
-      fatherName?: string | null;
-      obtainedMarks?: string | null;
-      totalMarks?: string | null;
-    };
+    result?: StudentResult;
+    detectedColumns?: Record<string, string | null | undefined>;
     diagnosticNote?: string;
     code?: string;
-    duplicateDetected?: boolean;
+    ambiguityDetected?: boolean;
   } | null>(null);
-
-  const handleTestRollLookup = async () => {
-    if (!testLookupRoll.trim()) {
-      alert("Please enter a Roll Number to test.");
-      return;
-    }
-
-    setIsTestingLookup(true);
-    setLookupDiagnosticResult(null);
-
-    try {
-      const res = await fetch("/api/admin/sheets/test-lookup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-admin-token": "triple-e-2026",
-        },
-        body: JSON.stringify({
-          categoryId: activeCategory,
-          rollNumber: testLookupRoll.trim(),
-          spreadsheetUrl,
-          worksheetName,
-          headerRowIndex,
-          columnMappings,
-        }),
-      });
-
-      const data = await res.json();
-      setLookupDiagnosticResult(data);
-    } catch (err: any) {
-      setLookupDiagnosticResult({
-        success: false,
-        message: err.message || "Failed to execute candidate lookup test.",
-      });
-    } finally {
-      setIsTestingLookup(false);
-    }
-  };
 
   // Load configuration from server store
   useEffect(() => {
@@ -140,14 +101,19 @@ export default function AdminSheetsPage() {
         if (res.ok) {
           const data = await res.json();
           if (data.store) {
-            setConnections(data.store.categories);
+            if (data.store.centers) {
+              setCenterConnections({
+                ...DEFAULT_CENTER_SHEETS_CONFIG,
+                ...data.store.centers,
+              });
+            }
             setServiceAccountEmail(
               data.store.serviceAccountEmail || "triple-e-sheets-sync@triple-e-org.iam.gserviceaccount.com"
             );
           }
         }
       } catch (err) {
-        console.error("Failed to load category connections:", err);
+        console.error("Failed to load center sheet connections:", err);
       } finally {
         setLoadingConfig(false);
       }
@@ -155,19 +121,32 @@ export default function AdminSheetsPage() {
     loadStore();
   }, []);
 
-  // Update form fields when activeCategory or connections change
+  // Update form fields when activeCenterId or connections change
   useEffect(() => {
-    if (connections && connections[activeCategory]) {
-      const conn = connections[activeCategory];
+    const conn = centerConnections[activeCenterId] || DEFAULT_CENTER_SHEETS_CONFIG[activeCenterId];
+    if (conn) {
       setSpreadsheetUrl(conn.spreadsheetUrl || "");
-      setWorksheetName(conn.worksheetName || "");
+      setWorksheetName(conn.worksheetName || conn.centerName || "");
       setHeaderRowIndex(conn.headerRowIndex || 1);
-      setColumnMappings(conn.columnMappings || { rollNumber: "", studentName: "", obtainedMarks: "" });
+      setColumnMappings(
+        conn.columnMappings || {
+          studentName: "Name",
+          fatherName: "Father Name",
+          schoolName: "School",
+          classOrSection: "Class",
+          tehsil: "Tehsil",
+          totalMarks: "Total Marks",
+          obtainedMarks: "Obt. Marks",
+          level: "Level",
+          rollNumber: "Roll No",
+        }
+      );
       setTestResult(null);
       setPreviewData(null);
       setSaveSuccess(false);
+      setLookupDiagnosticResult(null);
     }
-  }, [activeCategory, connections]);
+  }, [activeCenterId, centerConnections]);
 
   // Extract spreadsheet ID dynamically
   const getExtractedId = (urlOrId: string) => {
@@ -178,6 +157,8 @@ export default function AdminSheetsPage() {
   };
 
   const extractedId = getExtractedId(spreadsheetUrl);
+  const activeCenter = EXAMINATION_CENTERS.find((c) => c.id === activeCenterId);
+  const currentConn = centerConnections[activeCenterId] || DEFAULT_CENTER_SHEETS_CONFIG[activeCenterId];
 
   const handleTestConnection = async () => {
     if (!spreadsheetUrl.trim()) {
@@ -219,22 +200,19 @@ export default function AdminSheetsPage() {
           setWorksheetName(data.preview.availableWorksheets[0]);
         }
 
-        // Apply suggested mappings if current mappings are incomplete
+        // Apply suggested mappings if available
         if (data.preview.suggestedMappings) {
           setColumnMappings((prev) => ({
             ...prev,
-            rollNumber: prev.rollNumber || data.preview.suggestedMappings.rollNumber || "",
             studentName: prev.studentName || data.preview.suggestedMappings.studentName || "",
             obtainedMarks: prev.obtainedMarks || data.preview.suggestedMappings.obtainedMarks || "",
             fatherName: prev.fatherName || data.preview.suggestedMappings.fatherName || "",
             schoolName: prev.schoolName || data.preview.suggestedMappings.schoolName || "",
-            district: prev.district || data.preview.suggestedMappings.district || "",
+            tehsil: prev.tehsil || data.preview.suggestedMappings.tehsil || "",
             classOrSection: prev.classOrSection || data.preview.suggestedMappings.classOrSection || "",
+            level: prev.level || data.preview.suggestedMappings.level || "",
             totalMarks: prev.totalMarks || data.preview.suggestedMappings.totalMarks || "",
-            percentage: prev.percentage || data.preview.suggestedMappings.percentage || "",
-            grade: prev.grade || data.preview.suggestedMappings.grade || "",
-            passFailStatus: prev.passFailStatus || data.preview.suggestedMappings.passFailStatus || "",
-            rank: prev.rank || data.preview.suggestedMappings.rank || "",
+            rollNumber: prev.rollNumber || data.preview.suggestedMappings.rollNumber || "",
           }));
         }
       } else {
@@ -262,8 +240,8 @@ export default function AdminSheetsPage() {
       return;
     }
 
-    if (!columnMappings.rollNumber || !columnMappings.studentName || !columnMappings.obtainedMarks) {
-      alert("Please map at least: Roll Number, Student Name, and Obtained Marks.");
+    if (!columnMappings.studentName || !columnMappings.obtainedMarks) {
+      alert("Please map at least: Student Name and Obtained Marks.");
       return;
     }
 
@@ -278,17 +256,19 @@ export default function AdminSheetsPage() {
           "x-admin-token": "triple-e-2026",
         },
         body: JSON.stringify({
-          categoryId: activeCategory,
+          centerId: activeCenterId,
           connection: {
+            centerId: activeCenterId,
+            centerName: activeCenter?.name || activeCenterId,
             spreadsheetUrl,
             spreadsheetId: extractedId,
-            worksheetName: worksheetName || "Sheet1",
+            worksheetName: worksheetName || activeCenter?.name || "Sheet1",
             headerRowIndex,
             status: "connected",
             lastTestedAt: new Date().toISOString(),
             columnMappings,
-            availableWorksheets: previewData?.availableWorksheets || connections?.[activeCategory]?.availableWorksheets,
-            detectedHeaders: previewData?.headers || connections?.[activeCategory]?.detectedHeaders,
+            availableWorksheets: previewData?.availableWorksheets || currentConn?.availableWorksheets,
+            detectedHeaders: previewData?.headers || currentConn?.detectedHeaders,
           },
         }),
       });
@@ -297,13 +277,10 @@ export default function AdminSheetsPage() {
       if (res.ok && data.success) {
         setSaveSuccess(true);
         // Update local state
-        setConnections((prev) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            [activeCategory]: data.connection,
-          };
-        });
+        setCenterConnections((prev) => ({
+          ...prev,
+          [activeCenterId]: data.connection,
+        }));
         setTimeout(() => setSaveSuccess(false), 4000);
       } else {
         alert(data.message || "Failed to save configuration.");
@@ -329,7 +306,7 @@ export default function AdminSheetsPage() {
           "x-admin-token": "triple-e-2026",
         },
         body: JSON.stringify({
-          categoryId: activeCategory,
+          centerId: activeCenterId,
           connection: {
             status: "disconnected",
           },
@@ -337,27 +314,65 @@ export default function AdminSheetsPage() {
       });
 
       if (res.ok) {
-        setConnections((prev) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            [activeCategory]: {
-              ...prev[activeCategory],
-              status: "disconnected",
-            },
-          };
-        });
+        setCenterConnections((prev) => ({
+          ...prev,
+          [activeCenterId]: {
+            ...prev[activeCenterId],
+            status: "disconnected",
+          },
+        }));
         setPreviewData(null);
         setTestResult(null);
         setShowDisconnectModal(false);
       } else {
         const data = await res.json();
-        alert(data.message || "Failed to disconnect category.");
+        alert(data.message || "Failed to disconnect center.");
       }
     } catch (err: any) {
-      alert(err.message || "Error disconnecting category.");
+      alert(err.message || "Error disconnecting center.");
     } finally {
       setIsDisconnecting(false);
+    }
+  };
+
+  const handleTestCandidateLookup = async () => {
+    if (!testStudentName.trim() && !testRollNumber.trim()) {
+      alert("Please enter a Student Name to test.");
+      return;
+    }
+
+    setIsTestingLookup(true);
+    setLookupDiagnosticResult(null);
+
+    try {
+      const res = await fetch("/api/admin/sheets/test-lookup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-token": "triple-e-2026",
+        },
+        body: JSON.stringify({
+          centerId: activeCenterId,
+          studentName: testStudentName.trim() || undefined,
+          fatherName: testFatherName.trim() || undefined,
+          schoolName: testSchoolName.trim() || undefined,
+          rollNumber: testRollNumber.trim() || undefined,
+          spreadsheetUrl,
+          worksheetName,
+          headerRowIndex,
+          columnMappings,
+        }),
+      });
+
+      const data = await res.json();
+      setLookupDiagnosticResult(data);
+    } catch (err: any) {
+      setLookupDiagnosticResult({
+        success: false,
+        message: err.message || "Failed to execute candidate lookup test.",
+      });
+    } finally {
+      setIsTestingLookup(false);
     }
   };
 
@@ -367,8 +382,13 @@ export default function AdminSheetsPage() {
     setTimeout(() => setCopiedEmail(false), 2500);
   };
 
-  const currentConn = connections?.[activeCategory];
   const availableHeaders = previewData?.headers || currentConn?.detectedHeaders || [];
+
+  const filteredCenters = EXAMINATION_CENTERS.filter((c) => {
+    if (!searchFilter.trim()) return true;
+    const q = searchFilter.toLowerCase();
+    return c.name.toLowerCase().includes(q) || (c.tehsil && c.tehsil.toLowerCase().includes(q));
+  });
 
   return (
     <div className="space-y-8 max-w-6xl pb-16">
@@ -379,13 +399,13 @@ export default function AdminSheetsPage() {
           <div className="space-y-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-navy-900 border border-gold-500/40 text-gold-300 text-xs font-semibold">
               <Key className="w-3.5 h-3.5 text-gold-400" />
-              <span>Official Google Sheets API • Service Account Integration</span>
+              <span>Official Google Sheets API • 15 Examination Centers Integration</span>
             </div>
             <h2 className="font-serif text-xl sm:text-2xl font-bold text-white tracking-tight">
-              Independent Category Sheet Connections
+              Independent Examination Center Ledgers
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
-              To keep private competition results secure without publishing spreadsheets to the public web, share each Google Sheet as <strong className="text-white font-semibold">Viewer</strong> with the authorized Triple-E Service Account email.
+              Connect a dedicated Google Spreadsheet or worksheet tab for each of the 15 examination centers across Gilgit-Baltistan. Share your Google Sheets as <strong className="text-white font-semibold">Viewer</strong> with the authorized Triple-E Service Account email.
             </p>
           </div>
 
@@ -423,78 +443,93 @@ export default function AdminSheetsPage() {
         </div>
       </div>
 
-      {/* 3 Categories Tab Switcher */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {CATEGORY_TABS.map((tab) => {
-          const isSelected = activeCategory === tab.id;
-          const conn = connections?.[tab.id];
-          const isConnected = conn?.status === "connected";
+      {/* Examination Centers Selector Header */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <div className="inline-flex items-center gap-1.5 text-xs uppercase font-bold tracking-wider text-blue-700">
+              <MapPin className="w-4 h-4 text-gold-500" />
+              <span>Select Examination Center ({EXAMINATION_CENTERS.length} Centers)</span>
+            </div>
+            <h3 className="font-serif text-xl font-bold text-navy-950">
+              Configure Google Sheet Connection per Center
+            </h3>
+          </div>
 
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveCategory(tab.id)}
-              className={`p-5 rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col justify-between ${
-                isSelected
-                  ? "bg-white border-navy-900 shadow-card ring-2 ring-navy-900/20"
-                  : "bg-slate-50/80 border-slate-200 hover:bg-white hover:border-slate-300 shadow-2xs"
-              }`}
-            >
-              <div className="flex items-start justify-between gap-2">
+          <div className="relative w-full sm:w-64">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
+            <input
+              type="text"
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              placeholder="Filter centers or tehsils..."
+              className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-300 text-xs text-navy-950 focus:ring-2 focus:ring-navy-900 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        {/* 15 Centers Interactive Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+          {filteredCenters.map((center) => {
+            const isSelected = activeCenterId === center.id;
+            const conn = centerConnections[center.id] || DEFAULT_CENTER_SHEETS_CONFIG[center.id];
+            const isConnected = conn?.status === "connected";
+
+            return (
+              <button
+                key={center.id}
+                type="button"
+                onClick={() => setActiveCenterId(center.id)}
+                className={`p-3.5 rounded-xl border text-left transition-all relative overflow-hidden flex flex-col justify-between ${
+                  isSelected
+                    ? "bg-white border-navy-950 shadow-card ring-2 ring-navy-950/20"
+                    : "bg-slate-50/80 border-slate-200 hover:bg-white hover:border-slate-300 shadow-2xs"
+                }`}
+              >
                 <div>
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
-                    {tab.subtitle}
-                  </span>
-                  <h3 className="font-serif text-base font-bold text-navy-950 mt-0.5">
-                    {tab.name}
-                  </h3>
+                  <div className="flex items-center justify-between gap-1 mb-1">
+                    <span className="text-[10px] font-mono text-slate-400 uppercase">
+                      {center.tehsil || "GB"}
+                    </span>
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        isConnected ? "bg-emerald-500 ring-2 ring-emerald-200" : "bg-slate-300"
+                      }`}
+                      title={isConnected ? "Sheet Connected" : "Disconnected"}
+                    />
+                  </div>
+                  <h4 className="font-serif text-sm font-bold text-navy-950 leading-tight">
+                    {center.name}
+                  </h4>
                 </div>
 
-                <span
-                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${
-                    isConnected
-                      ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                      : "bg-slate-100 text-slate-600 border-slate-200"
-                  }`}
-                >
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      isConnected ? "bg-emerald-500 animate-pulse" : "bg-slate-400"
-                    }`}
-                  />
-                  <span>{isConnected ? "Connected" : "Disconnected"}</span>
-                </span>
-              </div>
-
-              <div className="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 flex items-center justify-between">
-                <span className="truncate max-w-[170px]">
-                  {conn?.worksheetName ? `Tab: ${conn.worksheetName}` : "No sheet connected"}
-                </span>
-                <span className="font-semibold text-navy-900 flex items-center gap-1">
-                  <span>Manage</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </span>
-              </div>
-            </button>
-          );
-        })}
+                <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                  <span className={`font-semibold ${isConnected ? "text-emerald-700" : "text-slate-500"}`}>
+                    {isConnected ? "Connected" : "Disconnected"}
+                  </span>
+                  {isSelected && <ArrowRight className="w-3 h-3 text-navy-950" />}
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Main Connection Form for Selected Category */}
+      {/* Main Connection Form for Selected Center */}
       <form onSubmit={handleSaveConnection} className="space-y-8">
         <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-card space-y-6">
           {/* Header */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
             <div>
-              <span className="text-xs uppercase font-bold tracking-wider text-blue-700">
-                Category Ledger Settings
-              </span>
-              <h3 className="font-serif text-xl font-bold text-navy-950">
-                {currentConn?.categoryTitle || `${activeCategory.toUpperCase()} Category`}
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-blue-50 text-blue-800 text-xs font-bold uppercase tracking-wider mb-1">
+                <MapPin className="w-3.5 h-3.5" />
+                <span>{activeCenter?.tehsil ? `Tehsil ${activeCenter.tehsil}` : "Examination Center"}</span>
+              </div>
+              <h3 className="font-serif text-2xl font-bold text-navy-950">
+                {activeCenter?.name || activeCenterId} Center Ledger Settings
               </h3>
-              <p className="text-xs text-slate-500">
-                Attach an independent spreadsheet or worksheet specifically for this category&apos;s candidates.
+              <p className="text-xs text-slate-500 mt-0.5">
+                Attach an independent spreadsheet or worksheet tab specifically for candidate results from {activeCenter?.name}.
               </p>
             </div>
 
@@ -538,7 +573,7 @@ export default function AdminSheetsPage() {
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-300 font-mono text-xs text-navy-950 focus:ring-2 focus:ring-navy-900 focus:outline-none shadow-xs"
               />
               <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
-                <span>Accepts full Google Sheets browser URL or raw 44-character spreadsheet ID.</span>
+                <span>Accepts full Google Sheets browser URL or raw spreadsheet ID.</span>
                 {extractedId && (
                   <span className="font-mono text-emerald-700 font-semibold flex items-center gap-1">
                     <CheckCircle2 className="w-3 h-3" /> ID: {extractedId.slice(0, 8)}...{extractedId.slice(-6)}
@@ -568,7 +603,7 @@ export default function AdminSheetsPage() {
                   type="text"
                   value={worksheetName}
                   onChange={(e) => setWorksheetName(e.target.value)}
-                  placeholder="e.g. LowerClass, Sheet1, Results"
+                  placeholder={`e.g. ${activeCenter?.name || "Sheet1"}`}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-navy-950 focus:ring-2 focus:ring-navy-900 focus:outline-none"
                 />
               )}
@@ -601,7 +636,7 @@ export default function AdminSheetsPage() {
               type="button"
               onClick={handleTestConnection}
               disabled={isTesting || !spreadsheetUrl}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-navy-950 hover:bg-navy-900 disabled:bg-slate-300 text-white text-xs font-bold transition-all shadow-xs"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-navy-950 hover:bg-navy-900 disabled:bg-slate-300 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 text-gold-400 ${isTesting ? "animate-spin" : ""}`} />
               <span>{isTesting ? "Verifying Sheet Connection..." : "Test Connection & Fetch Headers"}</span>
@@ -644,10 +679,10 @@ export default function AdminSheetsPage() {
                 <span>Column Header Mapping</span>
               </div>
               <h3 className="font-serif text-lg font-bold text-navy-950">
-                Map Spreadsheet Columns to Scorecard Attributes
+                Map Spreadsheet Columns to Candidate Attributes
               </h3>
               <p className="text-xs text-slate-500">
-                Map sheet columns to student attributes. Leading zeros in Roll Numbers are strictly preserved.
+                Student Name is the primary lookup key. Results can be verified using Father Name and School Name.
               </p>
             </div>
 
@@ -675,31 +710,9 @@ export default function AdminSheetsPage() {
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 block mb-3">
                   Mandatory Fields (Required for Result Query)
                 </span>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Roll Number */}
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
-                    <label className="block text-xs font-bold text-navy-950">
-                      Roll Number Column <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={columnMappings.rollNumber}
-                      onChange={(e) => setColumnMappings({ ...columnMappings, rollNumber: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-semibold bg-white focus:ring-2 focus:ring-navy-900"
-                    >
-                      <option value="">-- Select Column --</option>
-                      {availableHeaders.map((h) => (
-                        <option key={h} value={h}>
-                          {h}
-                        </option>
-                      ))}
-                    </select>
-                    <span className="text-[10px] text-slate-400 block">
-                      Matches admit card roll number (zeros preserved).
-                    </span>
-                  </div>
-
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Student Name */}
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
                     <label className="block text-xs font-bold text-navy-950">
                       Student Name Column <span className="text-red-500">*</span>
                     </label>
@@ -716,12 +729,12 @@ export default function AdminSheetsPage() {
                       ))}
                     </select>
                     <span className="text-[10px] text-slate-400 block">
-                      Full name of the candidate.
+                      Full candidate name (primary search key for lookup).
                     </span>
                   </div>
 
                   {/* Obtained Marks */}
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
                     <label className="block text-xs font-bold text-navy-950">
                       Obtained Marks Column <span className="text-red-500">*</span>
                     </label>
@@ -738,16 +751,16 @@ export default function AdminSheetsPage() {
                       ))}
                     </select>
                     <span className="text-[10px] text-slate-400 block">
-                      Score obtained out of total points.
+                      Numerical score obtained out of total points.
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Optional Fields */}
+              {/* Verification & Scorecard Fields */}
               <div>
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-3">
-                  Optional Fields (Scorecard Enrichment)
+                  Verification &amp; Scorecard Enrichment Fields
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                   {/* Father Name */}
@@ -767,6 +780,7 @@ export default function AdminSheetsPage() {
                         </option>
                       ))}
                     </select>
+                    <span className="text-[10px] text-slate-400 block">Secondary verification</span>
                   </div>
 
                   {/* School Name */}
@@ -786,31 +800,13 @@ export default function AdminSheetsPage() {
                         </option>
                       ))}
                     </select>
-                  </div>
-
-                  {/* District */}
-                  <div className="p-3 rounded-lg border border-slate-200 space-y-1">
-                    <label className="block text-[11px] font-semibold text-slate-700">
-                      District (GB)
-                    </label>
-                    <select
-                      value={columnMappings.district || ""}
-                      onChange={(e) => setColumnMappings({ ...columnMappings, district: e.target.value })}
-                      className="w-full px-2.5 py-1.5 rounded-md border border-slate-300 text-xs bg-white"
-                    >
-                      <option value="">(None / Omit)</option>
-                      {availableHeaders.map((h) => (
-                        <option key={h} value={h}>
-                          {h}
-                        </option>
-                      ))}
-                    </select>
+                    <span className="text-[10px] text-slate-400 block">Additional verification</span>
                   </div>
 
                   {/* Class / Section */}
                   <div className="p-3 rounded-lg border border-slate-200 space-y-1">
                     <label className="block text-[11px] font-semibold text-slate-700">
-                      Class / Section
+                      Class / Grade
                     </label>
                     <select
                       value={columnMappings.classOrSection || ""}
@@ -824,6 +820,47 @@ export default function AdminSheetsPage() {
                         </option>
                       ))}
                     </select>
+                    <span className="text-[10px] text-slate-400 block">e.g. Class 8, Class 10</span>
+                  </div>
+
+                  {/* Tehsil */}
+                  <div className="p-3 rounded-lg border border-slate-200 space-y-1">
+                    <label className="block text-[11px] font-semibold text-slate-700">
+                      Tehsil
+                    </label>
+                    <select
+                      value={columnMappings.tehsil || ""}
+                      onChange={(e) => setColumnMappings({ ...columnMappings, tehsil: e.target.value })}
+                      className="w-full px-2.5 py-1.5 rounded-md border border-slate-300 text-xs bg-white"
+                    >
+                      <option value="">(None / Omit)</option>
+                      {availableHeaders.map((h) => (
+                        <option key={h} value={h}>
+                          {h}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="text-[10px] text-slate-400 block">e.g. Khaplu, Keris</span>
+                  </div>
+
+                  {/* Level */}
+                  <div className="p-3 rounded-lg border border-slate-200 space-y-1">
+                    <label className="block text-[11px] font-semibold text-slate-700">
+                      Level (1, 2, 3)
+                    </label>
+                    <select
+                      value={columnMappings.level || ""}
+                      onChange={(e) => setColumnMappings({ ...columnMappings, level: e.target.value })}
+                      className="w-full px-2.5 py-1.5 rounded-md border border-slate-300 text-xs bg-white"
+                    >
+                      <option value="">(None / Omit)</option>
+                      {availableHeaders.map((h) => (
+                        <option key={h} value={h}>
+                          {h}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="text-[10px] text-slate-400 block">Level 1, 2, or 3</span>
                   </div>
 
                   {/* Total Marks */}
@@ -843,35 +880,17 @@ export default function AdminSheetsPage() {
                         </option>
                       ))}
                     </select>
+                    <span className="text-[10px] text-slate-400 block">Denominator score</span>
                   </div>
 
-                  {/* Percentage */}
+                  {/* Roll Number */}
                   <div className="p-3 rounded-lg border border-slate-200 space-y-1">
                     <label className="block text-[11px] font-semibold text-slate-700">
-                      Percentage
+                      Roll Number (Optional)
                     </label>
                     <select
-                      value={columnMappings.percentage || ""}
-                      onChange={(e) => setColumnMappings({ ...columnMappings, percentage: e.target.value })}
-                      className="w-full px-2.5 py-1.5 rounded-md border border-slate-300 text-xs bg-white"
-                    >
-                      <option value="">(Auto-calculate from Marks)</option>
-                      {availableHeaders.map((h) => (
-                        <option key={h} value={h}>
-                          {h}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Grade */}
-                  <div className="p-3 rounded-lg border border-slate-200 space-y-1">
-                    <label className="block text-[11px] font-semibold text-slate-700">
-                      Grade (A+, A, B...)
-                    </label>
-                    <select
-                      value={columnMappings.grade || ""}
-                      onChange={(e) => setColumnMappings({ ...columnMappings, grade: e.target.value })}
+                      value={columnMappings.rollNumber || ""}
+                      onChange={(e) => setColumnMappings({ ...columnMappings, rollNumber: e.target.value })}
                       className="w-full px-2.5 py-1.5 rounded-md border border-slate-300 text-xs bg-white"
                     >
                       <option value="">(None / Omit)</option>
@@ -881,25 +900,7 @@ export default function AdminSheetsPage() {
                         </option>
                       ))}
                     </select>
-                  </div>
-
-                  {/* Position / Rank */}
-                  <div className="p-3 rounded-lg border border-slate-200 space-y-1">
-                    <label className="block text-[11px] font-semibold text-slate-700">
-                      Position / Rank
-                    </label>
-                    <select
-                      value={columnMappings.rank || ""}
-                      onChange={(e) => setColumnMappings({ ...columnMappings, rank: e.target.value })}
-                      className="w-full px-2.5 py-1.5 rounded-md border border-slate-300 text-xs bg-white"
-                    >
-                      <option value="">(None / Omit)</option>
-                      {availableHeaders.map((h) => (
-                        <option key={h} value={h}>
-                          {h}
-                        </option>
-                      ))}
-                    </select>
+                    <span className="text-[10px] text-slate-400 block">Shown if present</span>
                   </div>
                 </div>
               </div>
@@ -907,7 +908,7 @@ export default function AdminSheetsPage() {
           )}
         </div>
 
-        {/* Sample Rows Preview (Masked & Carefully Formatted) */}
+        {/* Sample Rows Preview */}
         {previewData?.sampleRows && previewData.sampleRows.length > 0 && (
           <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-card space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -955,103 +956,71 @@ export default function AdminSheetsPage() {
           </div>
         )}
 
-        {/* Detected Columns & Dynamic Grading Standards Summary */}
-        <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-card space-y-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-3">
-            <div>
-              <div className="inline-flex items-center gap-1.5 text-xs uppercase font-bold tracking-wider text-navy-800">
-                <Sparkles className="w-4 h-4 text-gold-500" />
-                <span>Detected Ledger Columns &amp; Evaluation Standard</span>
-              </div>
-              <h4 className="font-serif text-base font-bold text-navy-950">
-                Active Column Aliases &amp; Dynamic Grading
-              </h4>
-              <p className="text-xs text-slate-500">
-                Headers are detected flexibly (e.g. Roll No, Name, obtain Mark, Total number). Grades are dynamically computed from percentage.
-              </p>
-            </div>
-            <span className="text-xs px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200 flex items-center gap-1 shrink-0">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              Dynamic Grading Active
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-1">
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <span className="text-[10px] uppercase font-bold text-slate-500 block">Roll Number</span>
-              <p className="text-xs font-mono font-bold text-navy-900 mt-1 truncate">
-                {columnMappings.rollNumber || previewData?.detectedColumns?.rollNumber || "Auto-detect"}
-              </p>
-            </div>
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <span className="text-[10px] uppercase font-bold text-slate-500 block">Candidate Name</span>
-              <p className="text-xs font-mono font-bold text-navy-900 mt-1 truncate">
-                {columnMappings.studentName || previewData?.detectedColumns?.studentName || "Auto-detect"}
-              </p>
-            </div>
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <span className="text-[10px] uppercase font-bold text-slate-500 block">Father Name</span>
-              <p className="text-xs font-mono font-bold text-navy-900 mt-1 truncate">
-                {columnMappings.fatherName || previewData?.detectedColumns?.fatherName || "(Optional)"}
-              </p>
-            </div>
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <span className="text-[10px] uppercase font-bold text-slate-500 block">Obtained Marks</span>
-              <p className="text-xs font-mono font-bold text-navy-900 mt-1 truncate">
-                {columnMappings.obtainedMarks || previewData?.detectedColumns?.obtainedMarks || "Auto-detect"}
-              </p>
-            </div>
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <span className="text-[10px] uppercase font-bold text-slate-500 block">Total Marks</span>
-              <p className="text-xs font-mono font-bold text-navy-900 mt-1 truncate">
-                {columnMappings.totalMarks || previewData?.detectedColumns?.totalMarks || "(Default 100)"}
-              </p>
-            </div>
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <span className="text-[10px] uppercase font-bold text-slate-500 block">Status Column</span>
-              <p className="text-xs font-medium text-amber-700 mt-1 truncate">
-                Ignored for Grade
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Candidate Lookup Diagnostic Tool */}
+        {/* Diagnostic Candidate Lookup Tool */}
         <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-card space-y-5">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <div>
               <div className="inline-flex items-center gap-1.5 text-xs uppercase font-bold tracking-wider text-navy-800">
                 <Sparkles className="w-4 h-4 text-gold-500" />
-                <span>Test Candidate Lookup Diagnostic</span>
+                <span>Test Candidate Lookup Diagnostic ({activeCenter?.name})</span>
               </div>
               <h4 className="font-serif text-base font-bold text-navy-950">
-                Verify Sheet Candidate Lookup &amp; Dynamic Grading
+                Verify Sheet Candidate Lookup &amp; Verification Rules
               </h4>
               <p className="text-xs text-slate-500">
-                Test roll number lookups (e.g. 222 or 123) directly before students search. Verifies flexible column matching and dynamic grading without saving.
+                Test lookup directly against this center&apos;s connected sheet by Student Name, with optional Father Name or School Name disambiguation.
               </p>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <div className="relative flex-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+            <div>
+              <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                Student Name <span className="text-red-500">*</span>
+              </label>
               <input
                 type="text"
-                value={testLookupRoll}
-                onChange={(e) => setTestLookupRoll(e.target.value)}
-                placeholder="Enter Roll Number to test (e.g. 222, 123, 0042)"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-300 font-mono text-xs text-navy-950 focus:ring-2 focus:ring-navy-900 focus:outline-none"
+                value={testStudentName}
+                onChange={(e) => setTestStudentName(e.target.value)}
+                placeholder="e.g. Ali Raza"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 font-medium text-xs text-navy-950 focus:ring-2 focus:ring-navy-900 focus:outline-none"
               />
             </div>
-            <button
-              type="button"
-              onClick={handleTestRollLookup}
-              disabled={isTestingLookup || !testLookupRoll.trim()}
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-navy-950 hover:bg-navy-900 disabled:bg-slate-300 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 text-gold-400 ${isTestingLookup ? "animate-spin" : ""}`} />
-              <span>{isTestingLookup ? "Testing Lookup..." : "Test Roll Number Lookup"}</span>
-            </button>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                Father Name (Optional)
+              </label>
+              <input
+                type="text"
+                value={testFatherName}
+                onChange={(e) => setTestFatherName(e.target.value)}
+                placeholder="Secondary verification"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 font-medium text-xs text-navy-950 focus:ring-2 focus:ring-navy-900 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                School Name (Optional)
+              </label>
+              <input
+                type="text"
+                value={testSchoolName}
+                onChange={(e) => setTestSchoolName(e.target.value)}
+                placeholder="Additional verification"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 font-medium text-xs text-navy-950 focus:ring-2 focus:ring-navy-900 focus:outline-none"
+              />
+            </div>
+            <div className="flex items-end">
+              <button
+                type="button"
+                onClick={handleTestCandidateLookup}
+                disabled={isTestingLookup || !testStudentName.trim()}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-navy-950 hover:bg-navy-900 disabled:bg-slate-300 text-white text-xs font-bold transition-all shadow-xs cursor-pointer h-[38px]"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-gold-400 ${isTestingLookup ? "animate-spin" : ""}`} />
+                <span>{isTestingLookup ? "Searching..." : "Test Candidate Lookup"}</span>
+              </button>
+            </div>
           </div>
 
           {/* Diagnostic Result Display */}
@@ -1060,7 +1029,7 @@ export default function AdminSheetsPage() {
               className={`p-5 rounded-xl border text-xs space-y-3 animate-in fade-in duration-200 ${
                 lookupDiagnosticResult.success
                   ? "bg-emerald-50/70 border-emerald-200 text-emerald-950"
-                  : lookupDiagnosticResult.code === "DUPLICATE_ROLL"
+                  : lookupDiagnosticResult.ambiguityDetected
                   ? "bg-amber-50 border-amber-200 text-amber-950"
                   : "bg-red-50/70 border-red-200 text-red-950"
               }`}
@@ -1074,7 +1043,7 @@ export default function AdminSheetsPage() {
                   )}
                   <span>
                     {lookupDiagnosticResult.success
-                      ? `Candidate Record Verified: ${lookupDiagnosticResult.result?.studentName} (Roll #${lookupDiagnosticResult.result?.rollNumber})`
+                      ? `Candidate Record Verified: ${lookupDiagnosticResult.result?.studentName}`
                       : lookupDiagnosticResult.message}
                   </span>
                 </div>
@@ -1095,8 +1064,15 @@ export default function AdminSheetsPage() {
                     )}
                   </div>
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Roll Number</span>
-                    <p className="font-mono font-bold text-navy-950 text-xs mt-0.5">{lookupDiagnosticResult.result.rollNumber}</p>
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Center &amp; Level</span>
+                    <p className="font-bold text-navy-950 text-xs mt-0.5">
+                      {lookupDiagnosticResult.result.examinationCenter}
+                    </p>
+                    {lookupDiagnosticResult.result.level && (
+                      <p className="text-[11px] text-slate-500">
+                        {lookupDiagnosticResult.result.level} ({getLevelDescription(lookupDiagnosticResult.result.level)})
+                      </p>
+                    )}
                   </div>
                   <div>
                     <span className="text-[10px] uppercase font-bold text-slate-500 block">Marks Scored</span>
@@ -1134,14 +1110,14 @@ export default function AdminSheetsPage() {
             {saveSuccess && (
               <span className="text-xs text-emerald-700 font-semibold flex items-center gap-1.5 animate-in fade-in">
                 <Check className="w-4 h-4 text-emerald-600" />
-                <span>Connection and Mappings Saved!</span>
+                <span>{activeCenter?.name} Sheet Connection Saved!</span>
               </span>
             )}
 
             <button
               type="submit"
               disabled={isSaving || !spreadsheetUrl}
-              className="inline-flex items-center gap-2 px-7 py-3 rounded-xl bg-navy-950 hover:bg-navy-900 disabled:bg-slate-400 text-white text-xs font-bold transition-all shadow-card"
+              className="inline-flex items-center gap-2 px-7 py-3 rounded-xl bg-navy-950 hover:bg-navy-900 disabled:bg-slate-400 text-white text-xs font-bold transition-all shadow-card cursor-pointer"
             >
               {isSaving ? (
                 <>
@@ -1151,7 +1127,7 @@ export default function AdminSheetsPage() {
               ) : (
                 <>
                   <Save className="w-4 h-4 text-gold-400" />
-                  <span>Save {activeCategory.toUpperCase()} Connection Settings</span>
+                  <span>Save {activeCenter?.name || activeCenterId} Connection</span>
                 </>
               )}
             </button>
@@ -1169,16 +1145,16 @@ export default function AdminSheetsPage() {
               </div>
               <div className="space-y-1">
                 <h3 className="font-serif text-base font-bold text-navy-950">
-                  Disconnect {currentConn?.categoryTitle || `${activeCategory.toUpperCase()} Category`}?
+                  Disconnect {activeCenter?.name || activeCenterId} Center Sheet?
                 </h3>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Are you sure you want to disconnect this Google Sheet? Candidates in this category will not be able to lookup live results until a new spreadsheet is connected.
+                  Are you sure you want to disconnect this Google Sheet? Students selecting {activeCenter?.name} will receive a notice asking them to contact the administration until a new spreadsheet is connected.
                 </p>
               </div>
             </div>
 
             <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600 font-mono">
-              <p className="font-semibold text-slate-700">Target Category: {activeCategory.toUpperCase()}</p>
+              <p className="font-semibold text-slate-700">Target Center: {activeCenter?.name || activeCenterId}</p>
               <p className="truncate text-slate-500 mt-0.5">Sheet ID: {currentConn?.spreadsheetId || extractedId || "N/A"}</p>
             </div>
 

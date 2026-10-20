@@ -3,11 +3,13 @@ import { CategoryId } from "@/lib/types";
 import { 
   checkRateLimit, 
   lookupStudentResultFromSheet, 
+  lookupStudentResultByCenter,
   normalizeRollNumber 
 } from "@/lib/server/googleSheetsService";
+import { findCenterByIdOrName } from "@/lib/constants";
 
 export async function GET(request: NextRequest) {
-  // 1. Rate Limiting Check (30 requests/minute per IP)
+  // 1. Rate Limiting Check (120 requests/minute per IP)
   const clientIp = 
     request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
     request.headers.get("x-real-ip") ||
@@ -32,16 +34,145 @@ export async function GET(request: NextRequest) {
 
   // 2. Query Parameters Extraction & Normalization
   const { searchParams } = new URL(request.url);
-  const rawRoll = searchParams.get("rollNumber");
+  const rawStudentName = searchParams.get("studentName") || searchParams.get("name");
+  const rawCenter = searchParams.get("center") || searchParams.get("examinationCenter");
+  const rawFather = searchParams.get("fatherName") || searchParams.get("father");
+  const rawSchool = searchParams.get("schoolName") || searchParams.get("school");
+
+  const rawRoll = searchParams.get("rollNumber") || searchParams.get("roll");
   const rawCategory = searchParams.get("category");
 
-  // Validate missing roll number
+  // MODE A: Primary Search by Examination Center & Student Name
+  if (rawStudentName !== null || rawCenter !== null) {
+    if (!rawStudentName || !rawStudentName.trim()) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "MISSING_STUDENT_NAME",
+          message: "Please enter the Student's Name to look up examination results.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!rawCenter || !rawCenter.trim()) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "MISSING_CENTER",
+          message: "Please select your Examination Center from the dropdown.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const centerInfo = findCenterByIdOrName(rawCenter);
+    if (!centerInfo) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "INVALID_CENTER",
+          message: "Invalid Examination Center. Please select one of the 15 authorized centers.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const outcome = await lookupStudentResultByCenter(
+      centerInfo.id,
+      rawStudentName.trim(),
+      rawFather?.trim() || undefined,
+      rawSchool?.trim() || undefined
+    );
+
+    if (outcome.code === "CENTER_NOT_CONFIGURED") {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "CENTER_NOT_CONFIGURED",
+          message: outcome.message,
+        },
+        { status: 503 }
+      );
+    }
+
+    if (outcome.code === "AMBIGUOUS_STUDENT") {
+      return NextResponse.json(
+        {
+          success: false,
+          ambiguityDetected: true,
+          duplicateDetected: true,
+          code: "AMBIGUOUS_STUDENT",
+          message: outcome.message,
+        },
+        { status: 400 }
+      );
+    }
+
+    if (outcome.code === "VERIFICATION_FAILED") {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "VERIFICATION_FAILED",
+          message: outcome.message,
+        },
+        { status: 404 }
+      );
+    }
+
+    if (outcome.code === "NOT_FOUND") {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "NOT_FOUND",
+          message: outcome.message,
+        },
+        { status: 404 }
+      );
+    }
+
+    if (outcome.code === "SHEET_ERROR") {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "SHEET_ERROR",
+          message: outcome.message,
+        },
+        { status: 503 }
+      );
+    }
+
+    if (outcome.success && outcome.result) {
+      return NextResponse.json(
+        {
+          success: true,
+          result: outcome.result,
+        },
+        {
+          headers: {
+            "Cache-Control": "private, no-cache, no-store, must-revalidate",
+          },
+        }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        code: "NOT_FOUND",
+        message: outcome.message || "Record not found.",
+      },
+      { status: 404 }
+    );
+  }
+
+  // MODE B: Legacy Search by Roll Number (for backwards compatibility)
   if (!rawRoll || !rawRoll.trim()) {
     return NextResponse.json(
       {
         success: false,
-        code: "MISSING_ROLL_NUMBER",
-        message: "Please enter your designated Roll Number to verify your result.",
+        code: "MISSING_INPUT",
+        message: "Please enter Student Name and select Examination Center to verify result.",
       },
       { status: 400 }
     );
@@ -63,7 +194,6 @@ export async function GET(request: NextRequest) {
   const rollNumber = normalizeRollNumber(rawRoll);
   const category = (rawCategory?.toLowerCase() || "all") as CategoryId | "all";
 
-  // 3. Category Evaluation
   const categoriesToCheck: CategoryId[] = 
     category && category !== "all" 
       ? [category] 
@@ -75,7 +205,6 @@ export async function GET(request: NextRequest) {
   for (const cat of categoriesToCheck) {
     const outcome = await lookupStudentResultFromSheet(cat, rollNumber);
 
-    // Duplicate roll number detected within category ledger -> 409 Conflict
     if (outcome.code === "DUPLICATE_ROLL") {
       return NextResponse.json(
         {
@@ -88,7 +217,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Success -> Return strictly matching student's approved fields
     if (outcome.success && outcome.result) {
       return NextResponse.json(
         {
@@ -103,7 +231,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Sheet misconfiguration or disconnected sheet error
     if (outcome.code === "SHEET_ERROR") {
       sheetErrorMsg = outcome.message || "Examination sheet ledger is currently unavailable.";
     }
@@ -113,7 +240,6 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // If the specific requested category had a sheet configuration/connection error, report 503
   if (category !== "all" && sheetErrorMsg) {
     return NextResponse.json(
       {
@@ -125,7 +251,6 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Result not found
   return NextResponse.json(
     {
       success: false,

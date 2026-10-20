@@ -6,21 +6,39 @@ export interface SearchResultResponse {
   message?: string;
   code?: string;
   duplicateDetected?: boolean;
+  ambiguityDetected?: boolean;
   source?: "google_sheets" | "database" | "demo_verified";
   isDemo?: boolean;
 }
 
+export interface StudentSearchParams {
+  studentName: string;
+  examinationCenter: string;
+  fatherName?: string;
+  schoolName?: string;
+}
+
 export async function lookupStudentResult(
-  rollNumber: string,
+  paramOrRoll: string | StudentSearchParams,
   category?: CategoryId | "all"
 ): Promise<SearchResultResponse> {
-  const cleanRoll = rollNumber.trim().toUpperCase();
-  const queryParams = new URLSearchParams({
-    rollNumber: cleanRoll,
-  });
+  const queryParams = new URLSearchParams();
 
-  if (category && category !== "all") {
-    queryParams.append("category", category);
+  if (typeof paramOrRoll === "object") {
+    queryParams.set("studentName", paramOrRoll.studentName.trim());
+    queryParams.set("center", paramOrRoll.examinationCenter.trim());
+    if (paramOrRoll.fatherName && paramOrRoll.fatherName.trim()) {
+      queryParams.set("fatherName", paramOrRoll.fatherName.trim());
+    }
+    if (paramOrRoll.schoolName && paramOrRoll.schoolName.trim()) {
+      queryParams.set("schoolName", paramOrRoll.schoolName.trim());
+    }
+  } else {
+    const cleanRoll = paramOrRoll.trim().toUpperCase();
+    queryParams.set("rollNumber", cleanRoll);
+    if (category && category !== "all") {
+      queryParams.set("category", category);
+    }
   }
 
   try {
@@ -40,6 +58,7 @@ export async function lookupStudentResult(
         code: data.code || "LOOKUP_FAILED",
         message: data.message || "Failed to query competition examination records.",
         duplicateDetected: data.duplicateDetected,
+        ambiguityDetected: data.ambiguityDetected,
       };
     }
 
@@ -51,4 +70,8 @@ export async function lookupStudentResult(
       message: err instanceof Error ? err.message : "A network connection error occurred while querying records.",
     };
   }
+}
+
+export async function searchStudentResult(params: StudentSearchParams): Promise<SearchResultResponse> {
+  return lookupStudentResult(params);
 }
