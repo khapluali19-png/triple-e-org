@@ -58,12 +58,20 @@ export default function CountdownControlCard({
   // Synchronize when initialCountdown prop updates from parent
   useEffect(() => {
     if (initialCountdown && typeof initialCountdown.enabled === "boolean") {
-      setCountdown((prev) => ({
-        ...prev,
-        ...initialCountdown,
-      }));
+      setCountdown((prev) => {
+        if (
+          prev.enabled === initialCountdown.enabled &&
+          prev.targetDate === initialCountdown.targetDate
+        ) {
+          return prev;
+        }
+        return {
+          ...prev,
+          ...initialCountdown,
+        };
+      });
     }
-  }, [initialCountdown?.enabled, initialCountdown]);
+  }, [initialCountdown?.enabled, initialCountdown?.targetDate]);
 
   // Live countdown clock
   useEffect(() => {
@@ -73,8 +81,9 @@ export default function CountdownControlCard({
     return () => clearInterval(timer);
   }, [countdown.targetDate]);
 
-  // Fetch latest saved status from backend on load
+  // Fetch latest saved status from backend on initial mount
   useEffect(() => {
+    let isMounted = true;
     async function fetchStatus() {
       try {
         setLoading(true);
@@ -82,27 +91,29 @@ export default function CountdownControlCard({
           cache: "no-store",
           headers: { "Cache-Control": "no-cache" },
         });
-        if (res.ok) {
+        if (res.ok && isMounted) {
           const data = await res.json();
           if (data.branding?.countdown) {
             setCountdown((prev) => ({
               ...prev,
               ...data.branding.countdown,
             }));
-            if (onStatusChange && typeof data.branding.countdown.enabled === "boolean") {
-              onStatusChange(data.branding.countdown.enabled);
-            }
           }
         }
       } catch (err) {
         console.error("Failed to fetch countdown status:", err);
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
 
     fetchStatus();
-  }, [onStatusChange]);
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleToggle = async () => {
     const nextState = !countdown.enabled;

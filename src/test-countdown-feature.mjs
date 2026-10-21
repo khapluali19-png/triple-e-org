@@ -279,9 +279,9 @@ async function runTests() {
     console.log("  ✔ [PASS] Two-way ON/OFF cycle fully verified: Countdown hides and search restores reliably for public users");
 
     // -------------------------------------------------------------
-    // Scenario 9: Admin Switches Countdown back to ON (Production Active State)
+    // Scenario 9: Admin Switches Countdown back to ON (Verify Lock)
     // -------------------------------------------------------------
-    console.log("\n--- Scenario 9: Admin Switches Countdown back to ON (Production Active State) ---");
+    console.log("\n--- Scenario 9: Admin Switches Countdown back to ON (Verify Lock) ---");
     const toggleOnFinalRes = await fetch(`${BASE_URL}/api/admin/countdown`, {
       method: "POST",
       headers: { 
@@ -306,6 +306,36 @@ async function runTests() {
     const searchLockFinalRes = await fetch(`${BASE_URL}/api/results?studentName=Ali+Raza&center=khaplu`);
     assert(searchLockFinalRes.status === 403, "Result search is locked when countdown is ON");
     console.log("  ✔ [PASS] Countdown active state re-enabled and verified for production");
+
+    // -------------------------------------------------------------
+    // Scenario 10: Admin Leaves Countdown OFF (User Requested State)
+    // -------------------------------------------------------------
+    console.log("\n--- Scenario 10: Admin Leaves Countdown OFF (User Requested State) ---");
+    const toggleOffUserRes = await fetch(`${BASE_URL}/api/admin/countdown`, {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "Cookie": sessionCookie,
+      },
+      body: JSON.stringify({ enabled: false }),
+    });
+    assert(toggleOffUserRes.status === 200, "Authenticated toggle to OFF returns HTTP 200 OK");
+    const toggleOffUserData = await toggleOffUserRes.json();
+    assert(toggleOffUserData.countdown.enabled === false, "Countdown enabled is false");
+
+    // Verify public website hides countdown section
+    const userHomeRes = await fetch(`${BASE_URL}/`, {
+      cache: "no-store",
+    });
+    const userHomeHtml = await userHomeRes.text();
+    assert(!userHomeHtml.includes("id=\"result-announcement\""), "Countdown section is hidden for public users when OFF");
+
+    // Verify search works immediately for public users
+    const userSearchRes = await fetch(`${BASE_URL}/api/results?studentName=Ali+Raza&center=khaplu`);
+    assert(userSearchRes.status === 200, "Result search is active and returns HTTP 200 OK for public users");
+    const userSearchData = await userSearchRes.json();
+    assert(userSearchData.result.studentName === "Ali Raza", "Student found: Ali Raza");
+    console.log("  ✔ [PASS] Final state confirmed OFF: Countdown is hidden and public search works without login");
 
     console.log("\n==================================================================");
     console.log("   🎉 ALL 9 COUNTDOWN QA SCENARIOS PASSED WITH ZERO ERRORS!      ");

@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import { WebsiteBrandingConfig } from "../types";
-import { DEFAULT_BRANDING } from "../constants";
+import { DEFAULT_BRANDING, DEFAULT_COUNTDOWN } from "../constants";
 import { logAdminActivity } from "./adminAuthStore";
 
 const DATA_DIR = path.join(process.cwd(), "src", "data");
@@ -42,37 +42,32 @@ export function getWebsiteBranding(): WebsiteBrandingConfig {
   let fileContent: string | null = null;
   let fileMtime = 0;
 
-  // 1. Check /tmp file first (written by runtime in serverless environments)
-  try {
-    if (fs.existsSync(TMP_BRANDING_FILE)) {
-      const stats = fs.statSync(TMP_BRANDING_FILE);
-      fileMtime = stats.mtimeMs;
-      fileContent = fs.readFileSync(TMP_BRANDING_FILE, "utf-8");
-    }
-  } catch {
-    // /tmp read error ignored
-  }
-
-  // 2. Check repo/workspace BRANDING_FILE; if newer than /tmp, prefer it
+  // 1. Check workspace BRANDING_FILE first (primary repository configuration)
   try {
     ensureDirExists(DATA_DIR);
     if (fs.existsSync(BRANDING_FILE)) {
       const stats = fs.statSync(BRANDING_FILE);
-      if (!fileContent || stats.mtimeMs > fileMtime) {
-        fileContent = fs.readFileSync(BRANDING_FILE, "utf-8");
-        fileMtime = stats.mtimeMs;
-      }
+      fileContent = fs.readFileSync(BRANDING_FILE, "utf-8");
+      fileMtime = stats.mtimeMs;
     }
   } catch {
     // file read error ignored
   }
 
-  // 3. If in-memory branding has a fresher timestamp than files on disk, use inMemoryBranding
-  if (inMemoryBranding && lastPersistedTimestamp >= fileMtime && (fileContent !== null || lastPersistedTimestamp > 0)) {
-    return inMemoryBranding;
+  // 2. Check /tmp file (prefer if newer, supporting serverless runtimes)
+  try {
+    if (fs.existsSync(TMP_BRANDING_FILE)) {
+      const stats = fs.statSync(TMP_BRANDING_FILE);
+      if (!fileContent || stats.mtimeMs > fileMtime) {
+        fileContent = fs.readFileSync(TMP_BRANDING_FILE, "utf-8");
+        fileMtime = stats.mtimeMs;
+      }
+    }
+  } catch {
+    // /tmp read error ignored
   }
 
-  // 4. Parse file content if available
+  // 3. Parse file content if available from disk
   if (fileContent) {
     try {
       const parsed = JSON.parse(fileContent);
@@ -199,23 +194,19 @@ export function saveWebsiteBranding(
   inMemoryBranding = merged;
   lastPersistedTimestamp = Date.now();
 
-  // 1. Write to /tmp (guaranteed writable across AWS Lambda, Vercel Serverless, Linux, Mac, Windows)
-  try {
-    const tmpTempFile = `${TMP_BRANDING_FILE}.tmp.${Date.now()}`;
-    fs.writeFileSync(tmpTempFile, JSON.stringify(merged, null, 2), "utf-8");
-    fs.renameSync(tmpTempFile, TMP_BRANDING_FILE);
-  } catch (err: any) {
-    console.warn("[BrandingStore] /tmp write failed:", err?.message || err);
-  }
-
-  // 2. Write to repository workspace file (works in local dev and dedicated persistent servers)
+  // 1. Write to repository workspace file (works in local dev and dedicated persistent servers)
   try {
     ensureDirExists(DATA_DIR);
-    const tempFile = `${BRANDING_FILE}.tmp.${Date.now()}`;
-    fs.writeFileSync(tempFile, JSON.stringify(merged, null, 2), "utf-8");
-    fs.renameSync(tempFile, BRANDING_FILE);
+    fs.writeFileSync(BRANDING_FILE, JSON.stringify(merged, null, 2), "utf-8");
   } catch (err: any) {
     console.warn("[BrandingStore] Filesystem write bypassed in serverless environment:", err?.message || err);
+  }
+
+  // 2. Write to /tmp (guaranteed writable across AWS Lambda, Vercel Serverless, Linux, Mac, Windows)
+  try {
+    fs.writeFileSync(TMP_BRANDING_FILE, JSON.stringify(merged, null, 2), "utf-8");
+  } catch (err: any) {
+    console.warn("[BrandingStore] /tmp write failed:", err?.message || err);
   }
 
   logAdminActivity("Website Branding Updated", actor, "Updated competition identity, ribbons, or social links.");
