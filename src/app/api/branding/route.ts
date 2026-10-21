@@ -1,12 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getWebsiteBranding } from "@/lib/server/brandingStore";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function GET(request: NextRequest) {
-  const cookieVal = request.cookies.get("countdown_enabled")?.value;
-  const branding = getWebsiteBranding(cookieVal ? cookieVal === "true" : undefined);
+export async function GET() {
+  const branding = getWebsiteBranding();
 
   return NextResponse.json(
     {

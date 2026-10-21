@@ -108,7 +108,7 @@ export default function CountdownControlCard({
       if (res.ok && data.success) {
         setCountdown((prev) => ({ ...prev, enabled: nextState }));
         if (typeof document !== "undefined") {
-          document.cookie = `countdown_enabled=${nextState}; path=/; max-age=31536000; SameSite=Lax`;
+          document.cookie = "countdown_enabled=; path=/; max-age=0; SameSite=Lax";
         }
         if (typeof window !== "undefined") {
           window.dispatchEvent(new CustomEvent("countdown-toggle", { detail: nextState }));

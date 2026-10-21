@@ -36,10 +36,9 @@ let lastPersistedTimestamp = 0;
 
 /**
  * Retrieves server-side website branding settings.
- * Supports /tmp fallback for serverless environments (e.g. Vercel)
- * and optional override (e.g. from cookie or query).
+ * Supports /tmp fallback for serverless environments (e.g. Vercel).
  */
-export function getWebsiteBranding(overrideCountdownEnabled?: boolean): WebsiteBrandingConfig {
+export function getWebsiteBranding(): WebsiteBrandingConfig {
   let fileContent: string | null = null;
   let fileMtime = 0;
 
@@ -70,12 +69,7 @@ export function getWebsiteBranding(overrideCountdownEnabled?: boolean): WebsiteB
 
   // 3. If in-memory branding has a fresher timestamp than files on disk, use inMemoryBranding
   if (inMemoryBranding && lastPersistedTimestamp >= fileMtime && (fileContent !== null || lastPersistedTimestamp > 0)) {
-    const result = { ...inMemoryBranding };
-    if (overrideCountdownEnabled !== undefined && result.countdown) {
-      result.countdown = { ...result.countdown, enabled: overrideCountdownEnabled };
-      result.resultsPublished = !overrideCountdownEnabled;
-    }
-    return result;
+    return inMemoryBranding;
   }
 
   // 4. Parse file content if available
@@ -111,11 +105,6 @@ export function getWebsiteBranding(overrideCountdownEnabled?: boolean): WebsiteB
         },
       };
 
-      if (overrideCountdownEnabled !== undefined && resolved.countdown) {
-        resolved.countdown = { ...resolved.countdown, enabled: overrideCountdownEnabled };
-        resolved.resultsPublished = !overrideCountdownEnabled;
-      }
-
       inMemoryBranding = resolved;
       lastPersistedTimestamp = fileMtime;
       return resolved;
@@ -125,15 +114,7 @@ export function getWebsiteBranding(overrideCountdownEnabled?: boolean): WebsiteB
   }
 
   // 5. Fallback to inMemoryBranding or DEFAULT_BRANDING
-  const fallback = inMemoryBranding || DEFAULT_BRANDING;
-  if (overrideCountdownEnabled !== undefined && fallback.countdown) {
-    return {
-      ...fallback,
-      countdown: { ...fallback.countdown, enabled: overrideCountdownEnabled },
-      resultsPublished: !overrideCountdownEnabled,
-    };
-  }
-  return fallback;
+  return inMemoryBranding || DEFAULT_BRANDING;
 }
 
 /**

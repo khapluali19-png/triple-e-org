@@ -41,32 +41,16 @@ function calculateTimeRemaining(targetIso: string): TimeRemaining {
   };
 }
 
-function getClientCountdownCookie(): boolean | null {
-  if (typeof document === "undefined") return null;
-  const match = document.cookie.match(/(?:^|;\s*)countdown_enabled=([^;]+)/);
-  if (!match) return null;
-  return match[1] === "true";
-}
-
 export default function CountdownSection({ branding = DEFAULT_BRANDING }: CountdownSectionProps) {
   const countdown = branding.countdown;
   const targetIso = countdown?.targetDate || DEFAULT_TARGET_ISO;
 
-  const [isVisible, setIsVisible] = useState(() => {
-    const cookieState = getClientCountdownCookie();
-    if (cookieState !== null) return cookieState;
-    return Boolean(branding.countdown?.enabled);
-  });
+  const [isVisible, setIsVisible] = useState(() => Boolean(branding.countdown?.enabled));
   const [timeLeft, setTimeLeft] = useState<TimeRemaining>(() => calculateTimeRemaining(targetIso));
 
-  // Sync with prop updates and cookie
+  // Sync with prop updates
   useEffect(() => {
-    const cookieState = getClientCountdownCookie();
-    if (cookieState !== null) {
-      setIsVisible(cookieState);
-    } else {
-      setIsVisible(Boolean(branding.countdown?.enabled));
-    }
+    setIsVisible(Boolean(branding.countdown?.enabled));
   }, [branding.countdown?.enabled]);
 
   // Client-side synchronization with /api/branding and custom events

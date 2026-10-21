@@ -21,8 +21,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const cookieVal = request.cookies.get("countdown_enabled")?.value;
-  const branding = getWebsiteBranding(cookieVal ? cookieVal === "true" : undefined);
+  const branding = getWebsiteBranding();
   return NextResponse.json(
     {
       success: true,
@@ -106,13 +105,8 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    // Set cookie on response to ensure fast state synchronization across serverless containers
-    response.cookies.set("countdown_enabled", String(body.enabled), {
-      path: "/",
-      maxAge: 60 * 60 * 24 * 365,
-      httpOnly: false,
-      sameSite: "lax",
-    });
+    // Delete any legacy countdown_enabled cookie to prevent split-brain client overrides
+    response.cookies.delete("countdown_enabled");
 
     return response;
   } catch (err: any) {

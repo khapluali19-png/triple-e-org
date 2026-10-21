@@ -144,51 +144,59 @@ async function runTests() {
     const turnOffData = await turnOffRes.json();
     assert(turnOffData.success === true, "Toggle response success is true");
     assert(turnOffData.countdown.enabled === false, "Countdown enabled is now false");
-    const turnOffCookies = turnOffRes.headers.get("set-cookie") || "";
-    assert(turnOffCookies.includes("countdown_enabled=false"), "Cookie countdown_enabled=false must be set on response");
-    console.log("  ✔ [PASS] Admin successfully switched countdown to OFF with synchronization cookie");
+    console.log("  ✔ [PASS] Admin successfully switched countdown to OFF");
 
     // -------------------------------------------------------------
-    // Scenario 5: Verify Behavior When Countdown is OFF
+    // Scenario 5: Verify Behavior When Countdown is OFF (Both Public & Admin)
     // -------------------------------------------------------------
-    console.log("\n--- Scenario 5: Verify Behavior When Countdown is OFF ---");
-    // 1. Check countdown section is NOT rendered on homepage after refresh (multiple fetches)
+    console.log("\n--- Scenario 5: Verify Behavior When Countdown is OFF (Both Public & Admin) ---");
+    // 1. Check countdown section is NOT rendered on homepage after refresh for PUBLIC USERS (NO COOKIES)
     for (let refresh = 1; refresh <= 3; refresh++) {
       const homeOffRes = await fetch(`${BASE_URL}/`, {
-        headers: { "Cookie": "countdown_enabled=false" },
         cache: "no-store",
       });
       const homeOffHtml = await homeOffRes.text();
-      assert(!homeOffHtml.includes("id=\"result-announcement\""), `Countdown section must be hidden when OFF (refresh #${refresh})`);
+      assert(!homeOffHtml.includes("id=\"result-announcement\""), `Countdown section must be hidden when OFF for public users (refresh #${refresh})`);
     }
     console.log("  ✔ [PASS] Countdown section is completely hidden from public website across multiple refreshes when OFF");
 
-    // 2. Check /api/branding returns updated status with no-store cache headers
+    // 2. Check /api/branding returns updated status with no-store cache headers for PUBLIC USERS (NO COOKIES)
     const brandingRes = await fetch(`${BASE_URL}/api/branding`, {
-      headers: { "Cookie": "countdown_enabled=false" },
       cache: "no-store",
     });
     const brandingData = await brandingRes.json();
-    assert(brandingData.branding.countdown.enabled === false, "/api/branding returns enabled: false");
+    assert(brandingData.branding.countdown.enabled === false, "/api/branding returns enabled: false for public users");
     const cacheHeader = brandingRes.headers.get("cache-control") || "";
     assert(cacheHeader.includes("no-store"), "/api/branding must return Cache-Control: no-store");
     console.log("  ✔ [PASS] /api/branding immediately returns countdown.enabled: false with Cache-Control: no-store");
 
-    // 3. Check result search is NOW ACTIVE and returns candidate results
-    const activeSearchRes = await fetch(`${BASE_URL}/api/results?studentName=Ali+Raza&center=khaplu`, {
-      headers: { "Cookie": "countdown_enabled=false" },
-    });
-    assert(activeSearchRes.status === 200, `Result search returns HTTP 200 OK when countdown is OFF, got ${activeSearchRes.status}`);
+    // 3. Check result search is NOW ACTIVE and returns candidate results for PUBLIC USERS (NO COOKIES, NO ADMIN AUTH)
+    const activeSearchRes = await fetch(`${BASE_URL}/api/results?studentName=Ali+Raza&center=khaplu`);
+    assert(activeSearchRes.status === 200, `Result search returns HTTP 200 OK for public users when countdown is OFF, got ${activeSearchRes.status}`);
     const activeData = await activeSearchRes.json();
-    assert(activeData.success === true, "Lookup succeeds");
+    assert(activeData.success === true, "Lookup succeeds for public user without admin authentication");
     assert(activeData.result.studentName === "Ali Raza", "Student name matches: Ali Raza");
     assert(activeData.result.obtainedMarks === 94, "Marks scored matches: 94");
-    console.log("  ✔ [PASS] Normal result searching is fully restored (Ali Raza found with 94 marks)");
+    console.log("  ✔ [PASS] Normal result searching is fully restored for public users without requiring admin login");
+
+    // 4. Check admin session also sees countdown hidden and search available
+    const adminHomeOffRes = await fetch(`${BASE_URL}/`, {
+      headers: { "Cookie": sessionCookie },
+      cache: "no-store",
+    });
+    const adminHomeOffHtml = await adminHomeOffRes.text();
+    assert(!adminHomeOffHtml.includes("id=\"result-announcement\""), "Countdown section is also hidden for admin when OFF");
+
+    const adminSearchRes = await fetch(`${BASE_URL}/api/results?studentName=Ali+Raza&center=khaplu`, {
+      headers: { "Cookie": sessionCookie },
+    });
+    assert(adminSearchRes.status === 200, "Result search returns HTTP 200 OK for admin when countdown is OFF");
+    console.log("  ✔ [PASS] Consistent behavior verified: countdown hidden and search open for both public users and admins");
 
     // -------------------------------------------------------------
-    // Scenario 6: Admin Switches Countdown back to ON (Persistence)
+    // Scenario 6: Admin Switches Countdown back to ON (Both Public & Admin Restricted)
     // -------------------------------------------------------------
-    console.log("\n--- Scenario 6: Admin Switches Countdown back to ON (Persistence) ---");
+    console.log("\n--- Scenario 6: Admin Switches Countdown back to ON (Both Public & Admin Restricted) ---");
     const turnOnRes = await fetch(`${BASE_URL}/api/admin/countdown`, {
       method: "POST",
       headers: { 
@@ -201,10 +209,29 @@ async function runTests() {
     const turnOnData = await turnOnRes.json();
     assert(turnOnData.countdown.enabled === true, "Countdown enabled is now true");
 
-    // Verify search is locked again
-    const reblockedRes = await fetch(`${BASE_URL}/api/results?studentName=Ali+Raza&center=khaplu`);
-    assert(reblockedRes.status === 403, "Search is immediately locked again with HTTP 403");
-    console.log("  ✔ [PASS] Countdown switched back to ON and searches immediately re-locked");
+    // Verify search is locked for PUBLIC users
+    const publicBlockedRes = await fetch(`${BASE_URL}/api/results?studentName=Ali+Raza&center=khaplu`);
+    assert(publicBlockedRes.status === 403, "Search is immediately locked for public users with HTTP 403");
+
+    // Verify search is ALSO locked for ADMIN users when ON
+    const adminBlockedRes = await fetch(`${BASE_URL}/api/results?studentName=Ali+Raza&center=khaplu`, {
+      headers: { "Cookie": sessionCookie },
+    });
+    assert(adminBlockedRes.status === 403, "Search is locked for admin users as well when ON with HTTP 403");
+    console.log("  ✔ [PASS] Search is consistently blocked for both public users and admins when countdown is ON");
+
+    // Verify countdown section is visible for both public users and admins when ON
+    const publicHomeOnRes = await fetch(`${BASE_URL}/`, { cache: "no-store" });
+    const publicHomeOnHtml = await publicHomeOnRes.text();
+    assert(publicHomeOnHtml.includes("id=\"result-announcement\""), "Countdown section is visible for public users when ON");
+
+    const adminHomeOnRes = await fetch(`${BASE_URL}/`, {
+      headers: { "Cookie": sessionCookie },
+      cache: "no-store",
+    });
+    const adminHomeOnHtml = await adminHomeOnRes.text();
+    assert(adminHomeOnHtml.includes("id=\"result-announcement\""), "Countdown section is visible for admins when ON");
+    console.log("  ✔ [PASS] Countdown section is visible for both public users and admins when ON");
 
     // Verify persistence in branding config file
     const brandingJson = JSON.parse(fs.readFileSync(path.join(process.cwd(), "src/data/branding-config.json"), "utf-8"));
@@ -239,20 +266,17 @@ async function runTests() {
 
     // Verify public website hides countdown section
     const finalHomeRes = await fetch(`${BASE_URL}/`, {
-      headers: { "Cookie": "countdown_enabled=false" },
       cache: "no-store",
     });
     const finalHomeHtml = await finalHomeRes.text();
-    assert(!finalHomeHtml.includes("id=\"result-announcement\""), "Countdown section is hidden when OFF");
+    assert(!finalHomeHtml.includes("id=\"result-announcement\""), "Countdown section is hidden for public users when OFF");
 
-    // Verify search works immediately
-    const finalSearchRes = await fetch(`${BASE_URL}/api/results?studentName=Ali+Raza&center=khaplu`, {
-      headers: { "Cookie": "countdown_enabled=false" },
-    });
-    assert(finalSearchRes.status === 200, "Result search is active and returns HTTP 200 OK");
+    // Verify search works immediately for public users
+    const finalSearchRes = await fetch(`${BASE_URL}/api/results?studentName=Ali+Raza&center=khaplu`);
+    assert(finalSearchRes.status === 200, "Result search is active and returns HTTP 200 OK for public users");
     const finalSearchData = await finalSearchRes.json();
     assert(finalSearchData.result.studentName === "Ali Raza", "Student found: Ali Raza");
-    console.log("  ✔ [PASS] Two-way ON/OFF cycle fully verified: Countdown hides and search restores reliably");
+    console.log("  ✔ [PASS] Two-way ON/OFF cycle fully verified: Countdown hides and search restores reliably for public users");
 
     // -------------------------------------------------------------
     // Scenario 9: Admin Switches Countdown back to ON (Production Active State)
@@ -272,7 +296,6 @@ async function runTests() {
 
     // Verify public website displays countdown section when ON
     const homeOnFinalRes = await fetch(`${BASE_URL}/`, {
-      headers: { "Cookie": "countdown_enabled=true" },
       cache: "no-store",
     });
     const homeOnFinalHtml = await homeOnFinalRes.text();
@@ -280,9 +303,7 @@ async function runTests() {
     assert(homeOnFinalHtml.includes("COMING SOON"), "COMING SOON text is displayed");
 
     // Verify result search is locked again
-    const searchLockFinalRes = await fetch(`${BASE_URL}/api/results?studentName=Ali+Raza&center=khaplu`, {
-      headers: { "Cookie": "countdown_enabled=true" },
-    });
+    const searchLockFinalRes = await fetch(`${BASE_URL}/api/results?studentName=Ali+Raza&center=khaplu`);
     assert(searchLockFinalRes.status === 403, "Result search is locked when countdown is ON");
     console.log("  ✔ [PASS] Countdown active state re-enabled and verified for production");
 

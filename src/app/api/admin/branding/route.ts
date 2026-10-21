@@ -21,8 +21,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const cookieVal = request.cookies.get("countdown_enabled")?.value;
-  const branding = getWebsiteBranding(cookieVal ? cookieVal === "true" : undefined);
+  const branding = getWebsiteBranding();
   return NextResponse.json(
     {
       success: true,

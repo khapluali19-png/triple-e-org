@@ -19,23 +19,12 @@ import { lookupStudentResult } from "@/lib/dataService";
 import ResultCard from "./ResultCard";
 import confetti from "canvas-confetti";
 
-function getClientCountdownCookie(): boolean | null {
-  if (typeof document === "undefined") return null;
-  const match = document.cookie.match(/(?:^|;\s*)countdown_enabled=([^;]+)/);
-  if (!match) return null;
-  return match[1] === "true";
-}
-
 interface ResultLookupProps {
   branding?: WebsiteBrandingConfig;
 }
 
 export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLookupProps) {
-  const [isCountdownActive, setIsCountdownActive] = useState(() => {
-    const cookieState = getClientCountdownCookie();
-    if (cookieState !== null) return cookieState;
-    return Boolean(branding?.countdown?.enabled);
-  });
+  const [isCountdownActive, setIsCountdownActive] = useState(() => Boolean(branding?.countdown?.enabled));
   const [studentName, setStudentName] = useState("");
   const [examinationCenter, setExaminationCenter] = useState("khaplu");
   const [fatherName, setFatherName] = useState("");
@@ -51,14 +40,9 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
 
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Sync with prop updates and cookie
+  // Sync with prop updates
   useEffect(() => {
-    const cookieState = getClientCountdownCookie();
-    if (cookieState !== null) {
-      setIsCountdownActive(cookieState);
-    } else {
-      setIsCountdownActive(Boolean(branding?.countdown?.enabled));
-    }
+    setIsCountdownActive(Boolean(branding?.countdown?.enabled));
   }, [branding?.countdown?.enabled]);
 
   // Client-side synchronization with /api/branding and custom events
