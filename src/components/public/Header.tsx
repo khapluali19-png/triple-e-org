@@ -70,10 +70,10 @@ export default function Header({ branding = DEFAULT_BRANDING }: HeaderProps) {
           {/* Right: Simple, Prominent "Check Result" Action */}
           <div className="hidden sm:flex items-center">
             <Link
-              href="/#result-lookup"
+              href={branding.countdown?.enabled ? "/#result-announcement" : "/#result-lookup"}
               className="inline-flex items-center justify-center px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-[#183153] hover:bg-[#12243d] text-white shadow-xs transition-colors"
             >
-              Check Result
+              {branding.countdown?.enabled ? "Announcement" : "Check Result"}
             </Link>
           </div>
 
@@ -121,11 +121,11 @@ export default function Header({ branding = DEFAULT_BRANDING }: HeaderProps) {
           </Link>
           <div className="pt-2">
             <Link
-              href="/#result-lookup"
+              href={branding.countdown?.enabled ? "/#result-announcement" : "/#result-lookup"}
               onClick={() => setMobileMenuOpen(false)}
               className="w-full inline-flex items-center justify-center px-4 py-2.5 rounded-lg text-sm font-semibold bg-[#183153] hover:bg-[#12243d] text-white transition-colors"
             >
-              Check Result
+              {branding.countdown?.enabled ? "Announcement" : "Check Result"}
             </Link>
           </div>
         </div>

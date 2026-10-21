@@ -24,6 +24,7 @@ interface ResultLookupProps {
 }
 
 export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLookupProps) {
+  const isCountdownActive = Boolean(branding?.countdown?.enabled);
   const [studentName, setStudentName] = useState("");
   const [examinationCenter, setExaminationCenter] = useState("khaplu");
   const [fatherName, setFatherName] = useState("");
@@ -41,6 +42,14 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
 
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+
+    if (isCountdownActive) {
+      setError({
+        code: "RESULTS_PENDING",
+        message: "Results will be available when the announcement period ends.",
+      });
+      return;
+    }
 
     const cleanName = studentName.trim();
     if (!cleanName) {
@@ -109,6 +118,14 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
   };
 
   const handleQuickTest = (name: string, center: string, father?: string, school?: string) => {
+    if (isCountdownActive) {
+      setError({
+        code: "RESULTS_PENDING",
+        message: "Results will be available when the announcement period ends.",
+      });
+      return;
+    }
+
     setStudentName(name);
     setExaminationCenter(center);
     setFatherName(father || "");
@@ -166,6 +183,21 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
         {/* Search Form Panel (Hidden in Print) */}
         <div id="result-lookup-form" className="max-w-3xl mx-auto text-left">
           <div className="bg-white rounded-2xl border border-[#E6E9EE] p-6 sm:p-8 shadow-card space-y-6">
+            {isCountdownActive && (
+              <div className="p-4 sm:p-5 rounded-xl bg-amber-50/90 border border-amber-200 text-amber-900 space-y-2">
+                <div className="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-amber-800">
+                  <Clock className="w-4 h-4 text-amber-600" />
+                  <span>Announcement Period Active</span>
+                </div>
+                <p className="text-sm font-semibold text-amber-950">
+                  Results will be available when the announcement period ends.
+                </p>
+                <p className="text-xs text-amber-800 leading-relaxed">
+                  Candidate result search and online scorecard verification are temporarily paused until the official ceremony on <strong>25 October 2026, Sunday, at 11:30 AM</strong> at Government Boys High School Khaplu.
+                </p>
+              </div>
+            )}
+
             <form onSubmit={handleSearch} className="space-y-5">
               {/* Row 1: Examination Center Dropdown (Required) & Student Name (Required) */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -181,12 +213,13 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
                   <div className="relative">
                     <select
                       id="examinationCenter"
+                      disabled={loading || isCountdownActive}
                       value={examinationCenter}
                       onChange={(e) => {
                         setExaminationCenter(e.target.value);
                         if (error) setError(null);
                       }}
-                      className="w-full px-4 py-3 rounded-lg border border-[#E6E9EE] bg-white text-sm font-medium text-[#20252B] focus:outline-none focus:border-[#183153] focus:ring-1 focus:ring-[#183153] transition-all cursor-pointer appearance-none pr-10"
+                      className="w-full px-4 py-3 rounded-lg border border-[#E6E9EE] bg-white text-sm font-medium text-[#20252B] disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed focus:outline-none focus:border-[#183153] focus:ring-1 focus:ring-[#183153] transition-all cursor-pointer appearance-none pr-10"
                     >
                       <option value="">-- Select Examination Center (15 Centers) --</option>
                       {EXAMINATION_CENTERS.map((center) => (
@@ -219,13 +252,14 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
                     ref={inputRef}
                     id="studentName"
                     type="text"
+                    disabled={loading || isCountdownActive}
                     value={studentName}
                     onChange={(e) => {
                       setStudentName(e.target.value);
                       if (error) setError(null);
                     }}
                     placeholder="e.g. Ali Raza, Fatima Zahra..."
-                    className="w-full px-4 py-3 rounded-lg border border-[#E6E9EE] text-sm text-[#20252B] placeholder:text-slate-400 focus:outline-none focus:border-[#183153] focus:ring-1 focus:ring-[#183153] transition-all"
+                    className="w-full px-4 py-3 rounded-lg border border-[#E6E9EE] text-sm text-[#20252B] disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed placeholder:text-slate-400 focus:outline-none focus:border-[#183153] focus:ring-1 focus:ring-[#183153] transition-all"
                   />
                   <p className="text-[11px] text-[#737B85]">
                     Primary search key. Roll number is not required.
@@ -247,13 +281,14 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
                   <input
                     id="fatherName"
                     type="text"
+                    disabled={loading || isCountdownActive}
                     value={fatherName}
                     onChange={(e) => {
                       setFatherName(e.target.value);
                       if (error) setError(null);
                     }}
                     placeholder="e.g. Muhammad Hussain"
-                    className="w-full px-4 py-2.5 rounded-lg border border-[#E6E9EE] text-xs sm:text-sm text-[#20252B] placeholder:text-slate-400 focus:outline-none focus:border-[#183153] focus:ring-1 focus:ring-[#183153] transition-all"
+                    className="w-full px-4 py-2.5 rounded-lg border border-[#E6E9EE] text-xs sm:text-sm text-[#20252B] disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed placeholder:text-slate-400 focus:outline-none focus:border-[#183153] focus:ring-1 focus:ring-[#183153] transition-all"
                   />
                   <p className="text-[11px] text-[#737B85]">
                     Recommended if multiple students share your name.
@@ -275,13 +310,14 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
                   <input
                     id="schoolName"
                     type="text"
+                    disabled={loading || isCountdownActive}
                     value={schoolName}
                     onChange={(e) => {
                       setSchoolName(e.target.value);
                       if (error) setError(null);
                     }}
                     placeholder="e.g. Govt High School Khaplu"
-                    className="w-full px-4 py-2.5 rounded-lg border border-[#E6E9EE] text-xs sm:text-sm text-[#20252B] placeholder:text-slate-400 focus:outline-none focus:border-[#183153] focus:ring-1 focus:ring-[#183153] transition-all"
+                    className="w-full px-4 py-2.5 rounded-lg border border-[#E6E9EE] text-xs sm:text-sm text-[#20252B] disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed placeholder:text-slate-400 focus:outline-none focus:border-[#183153] focus:ring-1 focus:ring-[#183153] transition-all"
                   />
                   <p className="text-[11px] text-[#737B85]">
                     Helps distinguish candidates with identical names.
@@ -293,10 +329,19 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
               <div className="pt-3">
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3.5 rounded-lg bg-[#183153] hover:bg-[#12243d] disabled:bg-slate-400 text-white font-semibold text-sm transition-all cursor-pointer gap-2 shadow-xs"
+                  disabled={loading || isCountdownActive}
+                  className={`w-full sm:w-auto inline-flex items-center justify-center px-8 py-3.5 rounded-lg ${
+                    isCountdownActive 
+                      ? "bg-slate-400 cursor-not-allowed text-white" 
+                      : "bg-[#183153] hover:bg-[#12243d] disabled:bg-slate-400 text-white cursor-pointer"
+                  } font-semibold text-sm transition-all gap-2 shadow-xs`}
                 >
-                  {loading ? (
+                  {isCountdownActive ? (
+                    <>
+                      <Clock className="w-4 h-4 text-white" />
+                      <span>Results Available After Announcement</span>
+                    </>
+                  ) : loading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin text-white" />
                       <span>Searching Examination Ledger...</span>
@@ -319,50 +364,85 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
+                  disabled={isCountdownActive}
                   onClick={() => handleQuickTest("Ali Raza", "khaplu", "Muhammad Hussain")}
-                  className="px-2.5 py-1 rounded-md bg-[#F7F8FA] hover:bg-slate-200 text-[#20252B] text-xs border border-[#E6E9EE] transition-colors"
+                  className={`px-2.5 py-1 rounded-md text-xs border border-[#E6E9EE] transition-colors ${
+                    isCountdownActive 
+                      ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
+                      : "bg-[#F7F8FA] hover:bg-slate-200 text-[#20252B] cursor-pointer"
+                  }`}
                 >
                   Ali Raza (Khaplu, Level 1)
                 </button>
                 <button
                   type="button"
+                  disabled={isCountdownActive}
                   onClick={() => handleQuickTest("Fatima Zahra", "khaplu", "Ghulam Mehdi")}
-                  className="px-2.5 py-1 rounded-md bg-[#F7F8FA] hover:bg-slate-200 text-[#20252B] text-xs border border-[#E6E9EE] transition-colors"
+                  className={`px-2.5 py-1 rounded-md text-xs border border-[#E6E9EE] transition-colors ${
+                    isCountdownActive 
+                      ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
+                      : "bg-[#F7F8FA] hover:bg-slate-200 text-[#20252B] cursor-pointer"
+                  }`}
                 >
                   Fatima Zahra (Khaplu, Level 2)
                 </button>
                 <button
                   type="button"
+                  disabled={isCountdownActive}
                   onClick={() => handleQuickTest("Kareem Ullah", "khaplu", "Sher Khan")}
-                  className="px-2.5 py-1 rounded-md bg-[#F7F8FA] hover:bg-slate-200 text-[#20252B] text-xs border border-[#E6E9EE] transition-colors"
+                  className={`px-2.5 py-1 rounded-md text-xs border border-[#E6E9EE] transition-colors ${
+                    isCountdownActive 
+                      ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
+                      : "bg-[#F7F8FA] hover:bg-slate-200 text-[#20252B] cursor-pointer"
+                  }`}
                 >
                   Kareem Ullah (Khaplu, Level 3)
                 </button>
                 <button
                   type="button"
+                  disabled={isCountdownActive}
                   onClick={() => handleQuickTest("Ilyas Khan", "keris")}
-                  className="px-2.5 py-1 rounded-md bg-[#F7F8FA] hover:bg-slate-200 text-[#20252B] text-xs border border-[#E6E9EE] transition-colors"
+                  className={`px-2.5 py-1 rounded-md text-xs border border-[#E6E9EE] transition-colors ${
+                    isCountdownActive 
+                      ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
+                      : "bg-[#F7F8FA] hover:bg-slate-200 text-[#20252B] cursor-pointer"
+                  }`}
                 >
                   Ilyas Khan (Keris)
                 </button>
                 <button
                   type="button"
+                  disabled={isCountdownActive}
                   onClick={() => handleQuickTest("Mehdi Hassan", "kharfaq")}
-                  className="px-2.5 py-1 rounded-md bg-[#F7F8FA] hover:bg-slate-200 text-[#20252B] text-xs border border-[#E6E9EE] transition-colors"
+                  className={`px-2.5 py-1 rounded-md text-xs border border-[#E6E9EE] transition-colors ${
+                    isCountdownActive 
+                      ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
+                      : "bg-[#F7F8FA] hover:bg-slate-200 text-[#20252B] cursor-pointer"
+                  }`}
                 >
                   Mehdi Hassan (Kharfaq)
                 </button>
                 <button
                   type="button"
+                  disabled={isCountdownActive}
                   onClick={() => handleQuickTest("Muhammad Ali", "khaplu")}
-                  className="px-2.5 py-1 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs border border-amber-200 transition-colors"
+                  className={`px-2.5 py-1 rounded-md text-xs border transition-colors ${
+                    isCountdownActive 
+                      ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed" 
+                      : "bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-200 cursor-pointer"
+                  }`}
                 >
                   Muhammad Ali (Ambiguity Test)
                 </button>
                 <button
                   type="button"
+                  disabled={isCountdownActive}
                   onClick={() => handleQuickTest("Student", "dumsum")}
-                  className="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs border border-slate-300 transition-colors"
+                  className={`px-2.5 py-1 rounded-md text-xs border transition-colors ${
+                    isCountdownActive 
+                      ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed" 
+                      : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300 cursor-pointer"
+                  }`}
                 >
                   Dumsum (Unconnected Center Test)
                 </button>
@@ -374,7 +454,22 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
         {/* Error States Display */}
         {error && (
           <div className="max-w-3xl mx-auto rounded-xl p-5 border text-left bg-white shadow-subtle animate-in fade-in">
-            {error.code === "AMBIGUOUS_STUDENT" ? (
+            {error.code === "RESULTS_PENDING" ? (
+              <div className="flex items-start gap-3.5">
+                <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <h4 className="text-sm font-semibold text-amber-900">
+                    Results Announcement Pending
+                  </h4>
+                  <p className="text-xs text-amber-800 leading-relaxed font-medium">
+                    {error.message}
+                  </p>
+                  <p className="text-[11px] text-slate-500 pt-1">
+                    The official result announcement is scheduled for 25 October 2026, Sunday, at 11:30 AM (PKT) at Government Boys High School Khaplu.
+                  </p>
+                </div>
+              </div>
+            ) : error.code === "AMBIGUOUS_STUDENT" ? (
               <div className="flex items-start gap-3.5">
                 <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                 <div className="space-y-1">

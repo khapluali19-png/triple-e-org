@@ -17,8 +17,10 @@ import {
   HelpCircle,
   RefreshCw,
   Sliders,
-  ExternalLink
+  ExternalLink,
+  Clock
 } from "lucide-react";
+import CountdownControlCard from "@/components/admin/CountdownControlCard";
 import { WebsiteBrandingConfig } from "@/lib/types";
 import { DEFAULT_BRANDING } from "@/lib/constants";
 
@@ -27,7 +29,7 @@ export default function AdminBrandingPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [activeTab, setActiveTab] = useState<"identity" | "labels" | "visibility" | "partner">("identity");
+  const [activeTab, setActiveTab] = useState<"countdown" | "identity" | "labels" | "visibility" | "partner">("countdown");
   const [uploadingLogo, setUploadingLogo] = useState(false);
 
   useEffect(() => {
@@ -146,6 +148,18 @@ export default function AdminBrandingPage() {
       <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto text-xs font-semibold">
         <button
           type="button"
+          onClick={() => setActiveTab("countdown")}
+          className={`px-4 py-2 rounded-lg transition-all flex items-center gap-1.5 ${
+            activeTab === "countdown"
+              ? "bg-navy-950 text-white shadow-xs"
+              : "text-slate-600 hover:bg-slate-100"
+          }`}
+        >
+          <Clock className="w-3.5 h-3.5 text-gold-400" />
+          <span>Result Announcement Countdown</span>
+        </button>
+        <button
+          type="button"
           onClick={() => setActiveTab("identity")}
           className={`px-4 py-2 rounded-lg transition-all ${
             activeTab === "identity"
@@ -190,7 +204,24 @@ export default function AdminBrandingPage() {
         </button>
       </div>
 
-      <form onSubmit={handleSave} className="space-y-8">
+      {/* Tab: Announcement Countdown */}
+      {activeTab === "countdown" && (
+        <div className="space-y-6">
+          <CountdownControlCard 
+            initialCountdown={config.countdown} 
+            onStatusChange={(enabled) => {
+              setConfig((prev) => ({
+                ...prev,
+                countdown: { ...(prev.countdown || {} as any), enabled },
+                resultsPublished: !enabled,
+              }));
+            }}
+          />
+        </div>
+      )}
+
+      {activeTab !== "countdown" && (
+        <form onSubmit={handleSave} className="space-y-8">
         {/* Tab 1: Identity & Headlines */}
         {activeTab === "identity" && (
           <div className="space-y-6">
@@ -799,6 +830,7 @@ export default function AdminBrandingPage() {
           </button>
         </div>
       </form>
+      )}
     </div>
   );
 }

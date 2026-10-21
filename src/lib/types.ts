@@ -212,6 +212,16 @@ export interface SocialLinksConfig {
   customLinks?: { label: string; url: string }[];
 }
 
+export interface CountdownConfig {
+  enabled: boolean;
+  targetDate: string; // ISO 8601 with timezone, e.g. "2026-10-25T11:30:00+05:00"
+  organization: string; // "Triple E Organization Gilgit-Baltistan"
+  eventTitle: string; // "Taqreeb-e-Taqseem Inaamaat wa Taleemi Seminar"
+  competitionName: string; // "Al Ghanche General Knowledge Quiz Competition 2026"
+  announcementDateDisplay: string; // "25 October 2026, Sunday, at 11:30 AM"
+  venue: string; // "Government Boys High School Khaplu"
+}
+
 export interface WebsiteBrandingConfig {
   organizationName: string;
   organizationTagline: string;
@@ -227,6 +237,7 @@ export interface WebsiteBrandingConfig {
   announcementText: string;
   announcementActive: boolean;
   resultsPublished: boolean;
+  countdown?: CountdownConfig;
   resultsNotice: string;
   footerText: string;
   primaryContactEmail: string;

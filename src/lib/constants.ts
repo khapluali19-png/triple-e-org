@@ -1,6 +1,7 @@
 import { 
   CategoryInfo, 
   WebsiteBrandingConfig, 
+  CountdownConfig,
   SocialLinksConfig, 
   SheetConnectionConfig, 
   CompetitionRule,
@@ -407,6 +408,16 @@ export const DEFAULT_CENTER_SHEETS_CONFIG: Record<string, CenterSheetConnection>
   },
 };
 
+export const DEFAULT_COUNTDOWN: CountdownConfig = {
+  enabled: true,
+  targetDate: "2026-10-25T11:30:00+05:00",
+  organization: "Triple E Organization Gilgit-Baltistan",
+  eventTitle: "Taqreeb-e-Taqseem Inaamaat wa Taleemi Seminar",
+  competitionName: "Al Ghanche General Knowledge Quiz Competition 2026",
+  announcementDateDisplay: "25 October 2026, Sunday, at 11:30 AM",
+  venue: "Government Boys High School Khaplu",
+};
+
 export const DEFAULT_BRANDING: WebsiteBrandingConfig = {
   organizationName: "Triple E Organization",
   organizationTagline: "Education • Empowerment • Environment",
@@ -421,7 +432,8 @@ export const DEFAULT_BRANDING: WebsiteBrandingConfig = {
   heroImageUrl: "https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=1200&q=80",
   announcementText: "Triple E Organization 2nd Quiz Competition • Official Examination Results",
   announcementActive: false,
-  resultsPublished: true,
+  resultsPublished: false,
+  countdown: DEFAULT_COUNTDOWN,
   resultsNotice: "Official scorecards are compiled directly from the competition evaluation board records.",
   footerText: "Promoting Education, Empowerment, and Environment through learning, knowledge, and healthy academic competition in District Ghanche, Gilgit-Baltistan, Pakistan.",
   primaryContactEmail: "",

@@ -7,6 +7,7 @@ import {
   normalizeRollNumber 
 } from "@/lib/server/googleSheetsService";
 import { findCenterByIdOrName } from "@/lib/constants";
+import { getWebsiteBranding } from "@/lib/server/brandingStore";
 
 export async function GET(request: NextRequest) {
   // 1. Rate Limiting Check (120 requests/minute per IP)
@@ -29,6 +30,25 @@ export async function GET(request: NextRequest) {
           "Retry-After": String(rateCheck.retryAfterSeconds || 30),
         },
       }
+    );
+  }
+
+  // 1.5. Result Announcement Restriction Check (When Countdown is ON)
+  const branding = getWebsiteBranding();
+  if (branding.countdown?.enabled) {
+    return NextResponse.json(
+      {
+        success: false,
+        code: "RESULTS_PENDING",
+        message: "Results will be available when the announcement period ends.",
+        countdown: {
+          targetDate: branding.countdown.targetDate,
+          eventTitle: branding.countdown.eventTitle,
+          competitionName: branding.countdown.competitionName,
+          venue: branding.countdown.venue,
+        },
+      },
+      { status: 403 }
     );
   }
 

@@ -49,10 +49,10 @@ export default function Hero({ branding = DEFAULT_BRANDING }: HeroProps) {
             {/* Result Lookup Action Button */}
             <div className="pt-2 flex flex-wrap items-center gap-4">
               <a
-                href="#result-lookup"
+                href={branding.countdown?.enabled ? "#result-announcement" : "#result-lookup"}
                 className="inline-flex items-center justify-center px-6 py-3 rounded-lg text-sm sm:text-base font-semibold bg-[#183153] hover:bg-[#12243d] text-white transition-colors shadow-xs gap-2 group"
               >
-                <span>Check Your Result</span>
+                <span>{branding.countdown?.enabled ? "View Result Announcement" : "Check Your Result"}</span>
                 <ArrowRight className="w-4 h-4 text-white group-hover:translate-x-0.5 transition-transform" />
               </a>
 

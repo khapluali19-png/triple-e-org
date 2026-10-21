@@ -31,13 +31,10 @@ export function isValidWebUrl(url?: string): boolean {
 let inMemoryBranding: WebsiteBrandingConfig | null = null;
 
 export function getWebsiteBranding(): WebsiteBrandingConfig {
-  if (inMemoryBranding) {
-    return inMemoryBranding;
-  }
-
   ensureDirExists(DATA_DIR);
 
   if (!fs.existsSync(BRANDING_FILE)) {
+    if (inMemoryBranding) return inMemoryBranding;
     try {
       fs.writeFileSync(BRANDING_FILE, JSON.stringify(DEFAULT_BRANDING, null, 2), "utf-8");
     } catch {
@@ -72,6 +69,10 @@ export function getWebsiteBranding(): WebsiteBrandingConfig {
       partnerAttribution: {
         ...DEFAULT_BRANDING.partnerAttribution,
         ...(parsed.partnerAttribution || {}),
+      },
+      countdown: {
+        ...(DEFAULT_BRANDING.countdown || {}),
+        ...(parsed.countdown || {}),
       },
     };
     inMemoryBranding = resolved;
@@ -137,6 +138,10 @@ export function saveWebsiteBranding(
     partnerAttribution: {
       ...current.partnerAttribution,
       ...(updates.partnerAttribution || {}),
+    },
+    countdown: {
+      ...(current.countdown || DEFAULT_BRANDING.countdown || {}),
+      ...(updates.countdown || {}),
     },
   };
 

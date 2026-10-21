@@ -59,6 +59,7 @@ export async function GET(request: NextRequest) {
       serviceAccountConfigured: store.serviceAccountConfigured,
       serviceAccountEmail: store.serviceAccountEmail,
       recentActivities: activities.slice(0, 10),
+      countdown: branding.countdown,
       brandingSummary: {
         competitionTitle: branding.competitionTitle,
         organizationName: branding.organizationName,

@@ -20,6 +20,8 @@ import {
   AlertCircle,
   HelpCircle
 } from "lucide-react";
+import CountdownControlCard from "@/components/admin/CountdownControlCard";
+import { CountdownConfig } from "@/lib/types";
 
 interface CategoryHealthItem {
   id: string;
@@ -54,6 +56,7 @@ interface OverviewData {
     organizationName: string;
     resultsPublished: boolean;
   };
+  countdown?: CountdownConfig;
 }
 
 export default function AdminDashboardPage() {
@@ -119,6 +122,18 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
+      {/* Result Announcement Countdown Control Card */}
+      <CountdownControlCard 
+        initialCountdown={data?.countdown}
+        onStatusChange={(enabled) => {
+          setData((prev) => prev ? {
+            ...prev,
+            countdown: { ...(prev.countdown || {} as any), enabled },
+            brandingSummary: { ...prev.brandingSummary, resultsPublished: !enabled }
+          } : prev);
+        }}
+      />
+
       {/* Metrics Row: Real Verified Connection Counts */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {/* Metric 1: Verified Connected Sheets */}
@@ -162,17 +177,23 @@ export default function AdminDashboardPage() {
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-subtle space-y-3">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-xs font-bold uppercase tracking-wider">Public Status</span>
-            <div className="p-2 rounded-lg bg-amber-50 text-amber-700">
+            <div className={`p-2 rounded-lg ${
+              data?.countdown?.enabled ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"
+            }`}>
               <Eye className="w-4 h-4" />
             </div>
           </div>
           <div>
-            <div className="text-2xl font-serif font-bold text-navy-950">
-              Live &amp; Searchable
+            <div className="text-xl font-serif font-bold text-navy-950 truncate">
+              {data?.countdown?.enabled ? "Countdown Active" : "Live & Searchable"}
             </div>
-            <p className="text-xs text-emerald-700 font-medium mt-1 flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Result lookup active</span>
+            <p className={`text-xs font-medium mt-1 flex items-center gap-1 ${
+              data?.countdown?.enabled ? "text-amber-700" : "text-emerald-700"
+            }`}>
+              <span className={`w-2 h-2 rounded-full ${
+                data?.countdown?.enabled ? "bg-amber-500 animate-pulse" : "bg-emerald-500 animate-pulse"
+              }`} />
+              <span>{data?.countdown?.enabled ? "Search locked until 25 Oct" : "Result lookup active"}</span>
             </p>
           </div>
         </div>
