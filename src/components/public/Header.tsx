@@ -28,8 +28,10 @@ export default function Header({ branding = DEFAULT_BRANDING }: HeaderProps) {
         });
         if (res.ok) {
           const data = await res.json();
-          if (data.branding?.countdown) {
-            setIsCountdown(Boolean(data.branding.countdown.enabled));
+          if (data.branding?.countdown && typeof data.branding.countdown.enabled === "boolean") {
+            setIsCountdown(data.branding.countdown.enabled);
+          } else if (typeof data.branding?.resultsPublished === "boolean") {
+            setIsCountdown(!data.branding.resultsPublished);
           }
         }
       } catch {}

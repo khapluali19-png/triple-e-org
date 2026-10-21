@@ -60,10 +60,12 @@ export default function AdminBrandingPage() {
     setSaved(false);
 
     try {
+      // Exclude countdown and resultsPublished from general branding save to preserve toggle state
+      const { countdown, resultsPublished, ...brandingUpdates } = config;
       const res = await fetch("/api/admin/branding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(config),
+        body: JSON.stringify(brandingUpdates),
       });
 
       const data = await res.json();

@@ -9,6 +9,9 @@ import {
 import { findCenterByIdOrName } from "@/lib/constants";
 import { getWebsiteBranding } from "@/lib/server/brandingStore";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(request: NextRequest) {
   // 1. Rate Limiting Check (120 requests/minute per IP)
   const clientIp = 
@@ -35,17 +38,18 @@ export async function GET(request: NextRequest) {
 
   // 1.5. Result Announcement Restriction Check (When Countdown is ON)
   const branding = getWebsiteBranding();
-  if (branding.countdown?.enabled) {
+  const isCountdownActive = Boolean(branding.countdown?.enabled);
+  if (isCountdownActive) {
     return NextResponse.json(
       {
         success: false,
         code: "RESULTS_PENDING",
         message: "Results will be available when the announcement period ends.",
         countdown: {
-          targetDate: branding.countdown.targetDate,
-          eventTitle: branding.countdown.eventTitle,
-          competitionName: branding.countdown.competitionName,
-          venue: branding.countdown.venue,
+          targetDate: branding.countdown?.targetDate,
+          eventTitle: branding.countdown?.eventTitle,
+          competitionName: branding.countdown?.competitionName,
+          venue: branding.countdown?.venue,
         },
       },
       {

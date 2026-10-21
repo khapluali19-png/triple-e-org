@@ -76,6 +76,13 @@ export function getWebsiteBranding(): WebsiteBrandingConfig {
   if (fileContent) {
     try {
       const parsed = JSON.parse(fileContent);
+      const parsedCountdownEnabled = parsed.countdown?.enabled;
+      const isCountdownOn = typeof parsedCountdownEnabled === "boolean"
+        ? parsedCountdownEnabled
+        : typeof parsed.resultsPublished === "boolean"
+          ? !parsed.resultsPublished
+          : DEFAULT_COUNTDOWN.enabled;
+
       const resolved: WebsiteBrandingConfig = {
         ...DEFAULT_BRANDING,
         ...parsed,
@@ -102,7 +109,9 @@ export function getWebsiteBranding(): WebsiteBrandingConfig {
         countdown: {
           ...(DEFAULT_BRANDING.countdown || {}),
           ...(parsed.countdown || {}),
+          enabled: isCountdownOn,
         },
+        resultsPublished: !isCountdownOn,
       };
 
       inMemoryBranding = resolved;
@@ -149,6 +158,13 @@ export function saveWebsiteBranding(
     throw new Error("Invalid Partner Website URL format. Must start with http:// or https://");
   }
 
+  let isCountdownOn = current.countdown?.enabled ?? DEFAULT_BRANDING.countdown?.enabled ?? true;
+  if (updates.countdown && typeof updates.countdown.enabled === "boolean") {
+    isCountdownOn = updates.countdown.enabled;
+  } else if (typeof updates.resultsPublished === "boolean") {
+    isCountdownOn = !updates.resultsPublished;
+  }
+
   const merged: WebsiteBrandingConfig = {
     ...current,
     ...updates,
@@ -175,7 +191,9 @@ export function saveWebsiteBranding(
     countdown: {
       ...(current.countdown || DEFAULT_BRANDING.countdown || {}),
       ...(updates.countdown || {}),
+      enabled: isCountdownOn,
     },
+    resultsPublished: !isCountdownOn,
   };
 
   inMemoryBranding = merged;

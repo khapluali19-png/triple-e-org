@@ -55,6 +55,16 @@ export default function CountdownControlCard({
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [timeLeft, setTimeLeft] = useState(() => calculateTimeRemaining(countdown.targetDate));
 
+  // Synchronize when initialCountdown prop updates from parent
+  useEffect(() => {
+    if (initialCountdown && typeof initialCountdown.enabled === "boolean") {
+      setCountdown((prev) => ({
+        ...prev,
+        ...initialCountdown,
+      }));
+    }
+  }, [initialCountdown?.enabled, initialCountdown]);
+
   // Live countdown clock
   useEffect(() => {
     const timer = setInterval(() => {
@@ -68,17 +78,20 @@ export default function CountdownControlCard({
     async function fetchStatus() {
       try {
         setLoading(true);
-        const res = await fetch("/api/admin/countdown", {
+        const res = await fetch("/api/branding", {
           cache: "no-store",
           headers: { "Cache-Control": "no-cache" },
         });
         if (res.ok) {
           const data = await res.json();
-          if (data.countdown) {
+          if (data.branding?.countdown) {
             setCountdown((prev) => ({
               ...prev,
-              ...data.countdown,
+              ...data.branding.countdown,
             }));
+            if (onStatusChange && typeof data.branding.countdown.enabled === "boolean") {
+              onStatusChange(data.branding.countdown.enabled);
+            }
           }
         }
       } catch (err) {
@@ -89,7 +102,7 @@ export default function CountdownControlCard({
     }
 
     fetchStatus();
-  }, []);
+  }, [onStatusChange]);
 
   const handleToggle = async () => {
     const nextState = !countdown.enabled;

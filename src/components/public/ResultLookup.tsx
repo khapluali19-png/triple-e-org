@@ -55,8 +55,10 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
         });
         if (res.ok) {
           const data = await res.json();
-          if (data.branding?.countdown) {
-            setIsCountdownActive(Boolean(data.branding.countdown.enabled));
+          if (data.branding?.countdown && typeof data.branding.countdown.enabled === "boolean") {
+            setIsCountdownActive(data.branding.countdown.enabled);
+          } else if (typeof data.branding?.resultsPublished === "boolean") {
+            setIsCountdownActive(!data.branding.resultsPublished);
           }
         }
       } catch {

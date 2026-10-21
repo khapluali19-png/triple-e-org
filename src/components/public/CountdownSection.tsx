@@ -63,8 +63,10 @@ export default function CountdownSection({ branding = DEFAULT_BRANDING }: Countd
         });
         if (res.ok) {
           const data = await res.json();
-          if (data.branding?.countdown) {
-            setIsVisible(Boolean(data.branding.countdown.enabled));
+          if (data.branding?.countdown && typeof data.branding.countdown.enabled === "boolean") {
+            setIsVisible(data.branding.countdown.enabled);
+          } else if (typeof data.branding?.resultsPublished === "boolean") {
+            setIsVisible(!data.branding.resultsPublished);
           }
         }
       } catch {
@@ -83,6 +85,7 @@ export default function CountdownSection({ branding = DEFAULT_BRANDING }: Countd
   }, []);
 
   useEffect(() => {
+    if (!isVisible) return;
     // Initial sync
     setTimeLeft(calculateTimeRemaining(targetIso));
 
@@ -91,7 +94,7 @@ export default function CountdownSection({ branding = DEFAULT_BRANDING }: Countd
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [targetIso]);
+  }, [targetIso, isVisible]);
 
   // If disabled by admin, hide completely from public website
   if (!isVisible) {
