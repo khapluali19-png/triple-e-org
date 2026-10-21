@@ -110,6 +110,9 @@ export default function CountdownControlCard({
         if (typeof document !== "undefined") {
           document.cookie = `countdown_enabled=${nextState}; path=/; max-age=31536000; SameSite=Lax`;
         }
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("countdown-toggle", { detail: nextState }));
+        }
         setFeedback({
           type: "success",
           message: nextState

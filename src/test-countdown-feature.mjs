@@ -254,8 +254,40 @@ async function runTests() {
     assert(finalSearchData.result.studentName === "Ali Raza", "Student found: Ali Raza");
     console.log("  ✔ [PASS] Two-way ON/OFF cycle fully verified: Countdown hides and search restores reliably");
 
+    // -------------------------------------------------------------
+    // Scenario 9: Admin Switches Countdown back to ON (Production Active State)
+    // -------------------------------------------------------------
+    console.log("\n--- Scenario 9: Admin Switches Countdown back to ON (Production Active State) ---");
+    const toggleOnFinalRes = await fetch(`${BASE_URL}/api/admin/countdown`, {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "Cookie": sessionCookie,
+      },
+      body: JSON.stringify({ enabled: true }),
+    });
+    assert(toggleOnFinalRes.status === 200, "Authenticated toggle to ON returns HTTP 200 OK");
+    const toggleOnFinalData = await toggleOnFinalRes.json();
+    assert(toggleOnFinalData.countdown.enabled === true, "Countdown enabled is true");
+
+    // Verify public website displays countdown section when ON
+    const homeOnFinalRes = await fetch(`${BASE_URL}/`, {
+      headers: { "Cookie": "countdown_enabled=true" },
+      cache: "no-store",
+    });
+    const homeOnFinalHtml = await homeOnFinalRes.text();
+    assert(homeOnFinalHtml.includes("id=\"result-announcement\""), "Countdown section is visible when ON");
+    assert(homeOnFinalHtml.includes("COMING SOON"), "COMING SOON text is displayed");
+
+    // Verify result search is locked again
+    const searchLockFinalRes = await fetch(`${BASE_URL}/api/results?studentName=Ali+Raza&center=khaplu`, {
+      headers: { "Cookie": "countdown_enabled=true" },
+    });
+    assert(searchLockFinalRes.status === 403, "Result search is locked when countdown is ON");
+    console.log("  ✔ [PASS] Countdown active state re-enabled and verified for production");
+
     console.log("\n==================================================================");
-    console.log("   🎉 ALL 8 COUNTDOWN QA SCENARIOS PASSED WITH ZERO ERRORS!      ");
+    console.log("   🎉 ALL 9 COUNTDOWN QA SCENARIOS PASSED WITH ZERO ERRORS!      ");
     console.log("==================================================================");
   } finally {
     if (serverProcess) {

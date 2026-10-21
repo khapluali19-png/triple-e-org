@@ -41,19 +41,35 @@ function calculateTimeRemaining(targetIso: string): TimeRemaining {
   };
 }
 
+function getClientCountdownCookie(): boolean | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(/(?:^|;\s*)countdown_enabled=([^;]+)/);
+  if (!match) return null;
+  return match[1] === "true";
+}
+
 export default function CountdownSection({ branding = DEFAULT_BRANDING }: CountdownSectionProps) {
   const countdown = branding.countdown;
   const targetIso = countdown?.targetDate || DEFAULT_TARGET_ISO;
 
-  const [isVisible, setIsVisible] = useState(() => Boolean(branding.countdown?.enabled ?? true));
+  const [isVisible, setIsVisible] = useState(() => {
+    const cookieState = getClientCountdownCookie();
+    if (cookieState !== null) return cookieState;
+    return Boolean(branding.countdown?.enabled);
+  });
   const [timeLeft, setTimeLeft] = useState<TimeRemaining>(() => calculateTimeRemaining(targetIso));
 
-  // Sync with prop updates
+  // Sync with prop updates and cookie
   useEffect(() => {
-    setIsVisible(Boolean(branding.countdown?.enabled ?? true));
+    const cookieState = getClientCountdownCookie();
+    if (cookieState !== null) {
+      setIsVisible(cookieState);
+    } else {
+      setIsVisible(Boolean(branding.countdown?.enabled));
+    }
   }, [branding.countdown?.enabled]);
 
-  // Client-side synchronization with /api/branding to guarantee latest setting after admin toggle
+  // Client-side synchronization with /api/branding and custom events
   useEffect(() => {
     async function syncStatus() {
       try {
@@ -72,6 +88,14 @@ export default function CountdownSection({ branding = DEFAULT_BRANDING }: Countd
       }
     }
     syncStatus();
+
+    const handleEvent = (e: any) => {
+      if (typeof e.detail === "boolean") {
+        setIsVisible(e.detail);
+      }
+    };
+    window.addEventListener("countdown-toggle", handleEvent);
+    return () => window.removeEventListener("countdown-toggle", handleEvent);
   }, []);
 
   useEffect(() => {

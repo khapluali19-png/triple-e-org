@@ -7,16 +7,32 @@ import { Menu, X } from "lucide-react";
 import { DEFAULT_BRANDING } from "@/lib/constants";
 import { WebsiteBrandingConfig } from "@/lib/types";
 
+function getClientCountdownCookie(): boolean | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(/(?:^|;\s*)countdown_enabled=([^;]+)/);
+  if (!match) return null;
+  return match[1] === "true";
+}
+
 interface HeaderProps {
   branding?: WebsiteBrandingConfig;
 }
 
 export default function Header({ branding = DEFAULT_BRANDING }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isCountdown, setIsCountdown] = useState(() => Boolean(branding.countdown?.enabled));
+  const [isCountdown, setIsCountdown] = useState(() => {
+    const cookieState = getClientCountdownCookie();
+    if (cookieState !== null) return cookieState;
+    return Boolean(branding.countdown?.enabled);
+  });
 
   useEffect(() => {
-    setIsCountdown(Boolean(branding.countdown?.enabled));
+    const cookieState = getClientCountdownCookie();
+    if (cookieState !== null) {
+      setIsCountdown(cookieState);
+    } else {
+      setIsCountdown(Boolean(branding.countdown?.enabled));
+    }
   }, [branding.countdown?.enabled]);
 
   useEffect(() => {
@@ -35,6 +51,14 @@ export default function Header({ branding = DEFAULT_BRANDING }: HeaderProps) {
       } catch {}
     }
     syncStatus();
+
+    const handleEvent = (e: any) => {
+      if (typeof e.detail === "boolean") {
+        setIsCountdown(e.detail);
+      }
+    };
+    window.addEventListener("countdown-toggle", handleEvent);
+    return () => window.removeEventListener("countdown-toggle", handleEvent);
   }, []);
 
   return (
