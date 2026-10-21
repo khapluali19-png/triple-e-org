@@ -41,6 +41,7 @@ export default function AdminSheetsPage() {
   const [centerConnections, setCenterConnections] = useState<Record<string, CenterSheetConnection>>(DEFAULT_CENTER_SHEETS_CONFIG);
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [searchFilter, setSearchFilter] = useState("");
+  const [applyToAllCenters, setApplyToAllCenters] = useState(false);
 
   // Active form state for selected center
   const [spreadsheetUrl, setSpreadsheetUrl] = useState("");
@@ -257,6 +258,7 @@ export default function AdminSheetsPage() {
         },
         body: JSON.stringify({
           centerId: activeCenterId,
+          applyToAllCenters,
           connection: {
             centerId: activeCenterId,
             centerName: activeCenter?.name || activeCenterId,
@@ -276,11 +278,15 @@ export default function AdminSheetsPage() {
       const data = await res.json();
       if (res.ok && data.success) {
         setSaveSuccess(true);
-        // Update local state
-        setCenterConnections((prev) => ({
-          ...prev,
-          [activeCenterId]: data.connection,
-        }));
+        // Update local state for all centers or active center
+        if (data.centers) {
+          setCenterConnections(data.centers);
+        } else if (data.connection) {
+          setCenterConnections((prev) => ({
+            ...prev,
+            [activeCenterId]: data.connection,
+          }));
+        }
         setTimeout(() => setSaveSuccess(false), 4000);
       } else {
         alert(data.message || "Failed to save configuration.");
@@ -579,6 +585,19 @@ export default function AdminSheetsPage() {
                     <CheckCircle2 className="w-3 h-3" /> ID: {extractedId.slice(0, 8)}...{extractedId.slice(-6)}
                   </span>
                 )}
+              </div>
+              <div className="pt-1.5">
+                <label className="inline-flex items-center gap-2 cursor-pointer select-none bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={applyToAllCenters}
+                    onChange={(e) => setApplyToAllCenters(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 text-navy-950 focus:ring-navy-900 cursor-pointer"
+                  />
+                  <span className="text-xs font-semibold text-slate-800">
+                    Apply this Google Sheet connection to all 15 examination centers
+                  </span>
+                </label>
               </div>
             </div>
 

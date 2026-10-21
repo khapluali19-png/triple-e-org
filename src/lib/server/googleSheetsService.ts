@@ -20,6 +20,8 @@ import {
   EXAMINATION_CENTERS 
 } from "../constants";
 
+export const BENCHMARK_DEMO_SPREADSHEET_ID = "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms";
+
 // In-memory cache for sheet values to optimize performance and prevent API quota exhaustion
 interface CachedSheetData {
   spreadsheetId: string;
@@ -486,7 +488,17 @@ export async function fetchSheetValues(
     );
   }
 
+  const isCustomSheet = Boolean(
+    spreadsheetId &&
+    spreadsheetId !== BENCHMARK_DEMO_SPREADSHEET_ID &&
+    spreadsheetId !== "INVALID_SPREADSHEET_ID" &&
+    spreadsheetId !== "FORBIDDEN_SHEET_ID" &&
+    !spreadsheetId.includes("error") &&
+    /^[a-zA-Z0-9-_]{15,80}$/.test(spreadsheetId)
+  );
+
   const authClient = getGoogleAuthClient();
+  let liveFetchError: Error | null = null;
 
   if (authClient) {
     try {
@@ -553,15 +565,15 @@ export async function fetchSheetValues(
       return { headers, rows, availableWorksheets };
     } catch (err: any) {
       console.error("Google Sheets API Live Fetch error:", err.message);
-      throw err;
+      liveFetchError = err;
     }
   }
 
-  // Try public Google Sheets export only if NOT the benchmark demo spreadsheet ID
+  // Try public Google Sheets export if service account was not configured or live fetch encountered an issue
   if (
     spreadsheetId &&
-    spreadsheetId !== "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms" &&
-    /^[a-zA-Z0-9-_]{20,80}$/.test(spreadsheetId)
+    spreadsheetId !== BENCHMARK_DEMO_SPREADSHEET_ID &&
+    /^[a-zA-Z0-9-_]{15,80}$/.test(spreadsheetId)
   ) {
     try {
       const gvizUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(
@@ -569,7 +581,7 @@ export async function fetchSheetValues(
       )}`;
       const pubRes = await fetch(gvizUrl, {
         cache: "no-store",
-        signal: AbortSignal.timeout(3000),
+        signal: AbortSignal.timeout(4000),
       });
       const contentType = pubRes.headers.get("content-type") || "";
       if (pubRes.ok && !contentType.includes("text/html")) {
@@ -590,12 +602,27 @@ export async function fetchSheetValues(
           }
         }
       }
-    } catch {
-      // Fallback cleanly to benchmark data if offline or blocked
+    } catch (gvizErr: any) {
+      console.warn("[GoogleSheetsService] Public CSV export attempt failed:", gvizErr.message);
     }
   }
 
-  // --- Verified Local Ledger Benchmark Mode (when live GCP keys are not yet configured) ---
+  // If this is a custom connected spreadsheet, DO NOT silently fall back to default demo data!
+  if (isCustomSheet) {
+    if (liveFetchError) {
+      throw liveFetchError;
+    }
+    if (!authClient) {
+      throw new Error(
+        `Unable to access connected Google Sheet "${spreadsheetId}". Google Service Account credentials are not configured in environment variables (GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_PRIVATE_KEY) and the sheet cannot be read publicly. Please share the sheet with your service account or make it public.`
+      );
+    }
+    throw new Error(
+      `Unable to access connected Google Sheet "${spreadsheetId}". Please verify the spreadsheet ID and ensure it is shared with the service account email: ${process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || "service account"}.`
+    );
+  }
+
+  // --- Verified Local Ledger Benchmark Mode (ONLY when using default demo sheet and live GCP keys are not yet configured) ---
   return getBenchmarkSheetData(spreadsheetId, worksheetName);
 }
 
@@ -895,13 +922,17 @@ export async function lookupStudentResultFromSheet(
       };
       SHEET_CACHE.set(cacheKey, sheetData);
     } catch (err: any) {
-      return {
-        success: false,
-        message:
-          err.message ||
-          "Unable to communicate with the examination spreadsheet. Please check back momentarily.",
-        code: "SHEET_ERROR",
-      };
+      if (sheetData && sheetData.rows && sheetData.rows.length > 0) {
+        console.warn(`[GoogleSheetsService] Temporary fetch issue for "${categoryId}", continuing with cached ledger:`, err.message);
+      } else {
+        return {
+          success: false,
+          message:
+            err.message ||
+            "Unable to communicate with the examination spreadsheet. Please check back momentarily.",
+          code: "SHEET_ERROR",
+        };
+      }
     }
   }
 
@@ -1305,11 +1336,15 @@ export async function lookupStudentResultByCenter(
       };
       SHEET_CACHE.set(cacheKey, sheetData);
     } catch (err: any) {
-      return {
-        success: false,
-        code: "SHEET_ERROR",
-        message: err.message || `Unable to access examination records for "${centerInfo.name}".`,
-      };
+      if (sheetData && sheetData.rows && sheetData.rows.length > 0) {
+        console.warn(`[GoogleSheetsService] Temporary fetch issue for "${centerInfo.name}", continuing with cached ledger:`, err.message);
+      } else {
+        return {
+          success: false,
+          code: "SHEET_ERROR",
+          message: err.message || `Unable to access examination records for "${centerInfo.name}".`,
+        };
+      }
     }
   }
 

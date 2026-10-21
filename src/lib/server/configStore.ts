@@ -1,10 +1,14 @@
 import fs from "fs";
 import path from "path";
+import os from "os";
 import { CategoryId, CategorySheetConnection, CategorySheetsStore, CenterSheetConnection } from "../types";
-import { DEFAULT_CENTER_SHEETS_CONFIG } from "../constants";
+import { DEFAULT_CENTER_SHEETS_CONFIG, EXAMINATION_CENTERS } from "../constants";
+import { logAdminActivity } from "./adminAuthStore";
 
 const DATA_DIR = path.join(process.cwd(), "src", "data");
 const CONFIG_FILE = path.join(DATA_DIR, "category-sheets-config.json");
+const TMP_CONFIG_FILE = path.join(os.tmpdir(), "triple-e-category-sheets-config.json");
+const BENCHMARK_SPREADSHEET_ID = "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms";
 
 const DEFAULT_STORE: CategorySheetsStore = {
   version: "2.1.0",
@@ -131,84 +135,162 @@ const DEFAULT_STORE: CategorySheetsStore = {
   },
 };
 
-function ensureDirExists(dirPath: string) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
+function ensureDirExists(dirPath: string): boolean {
+  try {
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
+    return true;
+  } catch {
+    return false;
   }
 }
 
 let inMemoryCategoryStore: CategorySheetsStore | null = null;
+let lastPersistedTimestamp = 0;
 
 export function getServerCategoryStore(): CategorySheetsStore {
+  let fileContent: string | null = null;
+  let fileMtime = 0;
+
+  // 1. Check workspace CONFIG_FILE first (primary repository configuration)
+  try {
+    ensureDirExists(DATA_DIR);
+    if (fs.existsSync(CONFIG_FILE)) {
+      const stats = fs.statSync(CONFIG_FILE);
+      fileContent = fs.readFileSync(CONFIG_FILE, "utf-8");
+      fileMtime = stats.mtimeMs;
+    }
+  } catch {
+    // file read error ignored
+  }
+
+  // 2. Check /tmp file (prefer if newer, supporting serverless runtimes and restarts)
+  try {
+    if (fs.existsSync(TMP_CONFIG_FILE)) {
+      const stats = fs.statSync(TMP_CONFIG_FILE);
+      if (!fileContent || stats.mtimeMs > fileMtime) {
+        fileContent = fs.readFileSync(TMP_CONFIG_FILE, "utf-8");
+        fileMtime = stats.mtimeMs;
+      }
+    }
+  } catch {
+    // /tmp read error ignored
+  }
+
+  // 3. If in-memory store is newer than disk files, preserve in-memory
+  if (inMemoryCategoryStore && lastPersistedTimestamp >= fileMtime && fileMtime > 0) {
+    return inMemoryCategoryStore;
+  }
+
+  // 4. Parse content from disk if available
+  if (fileContent) {
+    try {
+      const parsed = JSON.parse(fileContent) as CategorySheetsStore;
+
+      // Ensure centers exist, preserving all saved custom center connections
+      parsed.centers = {
+        ...DEFAULT_CENTER_SHEETS_CONFIG,
+        ...(parsed.centers || {}),
+      };
+
+      // If a custom primary spreadsheet is set, propagate to any center still on default benchmark
+      if (
+        parsed.primarySpreadsheetId &&
+        parsed.primarySpreadsheetId !== BENCHMARK_SPREADSHEET_ID
+      ) {
+        for (const [key, center] of Object.entries(parsed.centers)) {
+          if (center.spreadsheetId === BENCHMARK_SPREADSHEET_ID && center.status !== "disconnected") {
+            parsed.centers[key] = {
+              ...center,
+              spreadsheetId: parsed.primarySpreadsheetId,
+              spreadsheetUrl: parsed.primarySpreadsheetUrl || center.spreadsheetUrl,
+            };
+          }
+        }
+      }
+
+      // Dynamically update service account indicator from server environment
+      parsed.serviceAccountConfigured = !!(
+        process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
+        process.env.GOOGLE_PRIVATE_KEY
+      );
+      if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {
+        parsed.serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+      }
+
+      inMemoryCategoryStore = parsed;
+      lastPersistedTimestamp = fileMtime || Date.now();
+      return parsed;
+    } catch (error) {
+      console.error("Failed to parse category store file, using in-memory or defaults:", error);
+    }
+  }
+
   if (inMemoryCategoryStore) {
     return inMemoryCategoryStore;
   }
 
+  // 5. Initial fallback store
+  const hasServiceAccount = !!(
+    process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
+    process.env.GOOGLE_PRIVATE_KEY
+  );
+  const initialStore: CategorySheetsStore = {
+    ...DEFAULT_STORE,
+    serviceAccountConfigured: hasServiceAccount,
+    serviceAccountEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || undefined,
+  };
+
   try {
     ensureDirExists(DATA_DIR);
-    if (!fs.existsSync(CONFIG_FILE)) {
-      // Check if service account is present in environment
-      const hasServiceAccount = !!(
-        process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
-        process.env.GOOGLE_PRIVATE_KEY
-      );
-      const initialStore: CategorySheetsStore = {
-        ...DEFAULT_STORE,
-        serviceAccountConfigured: hasServiceAccount,
-        serviceAccountEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || undefined,
-      };
-      try {
-        fs.writeFileSync(CONFIG_FILE, JSON.stringify(initialStore, null, 2), "utf-8");
-      } catch {
-        // serverless read-only
-      }
-      inMemoryCategoryStore = initialStore;
-      return initialStore;
-    }
-
-    const raw = fs.readFileSync(CONFIG_FILE, "utf-8");
-    const parsed = JSON.parse(raw) as CategorySheetsStore;
-
-    // Ensure centers exist and include all 15 examination centers
-    parsed.centers = {
-      ...DEFAULT_CENTER_SHEETS_CONFIG,
-      ...(parsed.centers || {}),
-    };
-
-    // Dynamically update service account indicator from server environment
-    parsed.serviceAccountConfigured = !!(
-      process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
-      process.env.GOOGLE_PRIVATE_KEY
-    );
-    if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {
-      parsed.serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-    }
-
-    inMemoryCategoryStore = parsed;
-    return parsed;
-  } catch (error) {
-    console.error("Failed to read server category store, using defaults:", error);
-    inMemoryCategoryStore = DEFAULT_STORE;
-    return DEFAULT_STORE;
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(initialStore, null, 2), "utf-8");
+  } catch {
+    // serverless read-only
   }
+  try {
+    fs.writeFileSync(TMP_CONFIG_FILE, JSON.stringify(initialStore, null, 2), "utf-8");
+  } catch {
+    // /tmp write ignored
+  }
+
+  inMemoryCategoryStore = initialStore;
+  lastPersistedTimestamp = Date.now();
+  return initialStore;
 }
 
 export function saveServerCategoryStore(updated: CategorySheetsStore): void {
-  const dataToSave = {
+  const dataToSave: CategorySheetsStore = {
     ...updated,
     updatedAt: new Date().toISOString(),
   };
 
   inMemoryCategoryStore = dataToSave;
+  lastPersistedTimestamp = Date.now();
 
+  // 1. Write directly to repository workspace file (works in local dev and persistent servers)
   try {
     ensureDirExists(DATA_DIR);
-    // Write atomically via temporary file
-    const tempFile = `${CONFIG_FILE}.tmp.${Date.now()}`;
-    fs.writeFileSync(tempFile, JSON.stringify(dataToSave, null, 2), "utf-8");
-    fs.renameSync(tempFile, CONFIG_FILE);
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(dataToSave, null, 2), "utf-8");
   } catch (err: any) {
-    console.warn("[ConfigStore] Filesystem is read-only (serverless). Saved in memory only:", err?.message || err);
+    console.warn("[ConfigStore] Workspace file write bypassed in serverless environment:", err?.message || err);
+  }
+
+  // 2. Write to /tmp (guaranteed writable across AWS Lambda, Vercel Serverless, Linux, Mac, Windows)
+  try {
+    fs.writeFileSync(TMP_CONFIG_FILE, JSON.stringify(dataToSave, null, 2), "utf-8");
+  } catch (err: any) {
+    console.warn("[ConfigStore] /tmp write failed:", err?.message || err);
+  }
+
+  try {
+    logAdminActivity(
+      "Google Sheets Config Updated",
+      "Administrator",
+      "Connected Google Sheets ledger configuration permanently saved."
+    );
+  } catch {
+    // log failure ignored
   }
 }
 
@@ -226,6 +308,18 @@ export function updateCategoryConnection(
   };
 
   store.categories[categoryId] = merged;
+
+  if (
+    merged.spreadsheetId &&
+    merged.spreadsheetId !== BENCHMARK_SPREADSHEET_ID &&
+    merged.status !== "disconnected"
+  ) {
+    store.primarySpreadsheetId = merged.spreadsheetId;
+    if (merged.spreadsheetUrl) {
+      store.primarySpreadsheetUrl = merged.spreadsheetUrl;
+    }
+  }
+
   saveServerCategoryStore(store);
   return merged;
 }
@@ -238,7 +332,26 @@ export function getServerCenterStore(): Record<string, CenterSheetConnection> {
 export function getCenterConnection(centerId: string): CenterSheetConnection | undefined {
   const centers = getServerCenterStore();
   const cleanId = centerId.trim().toLowerCase();
-  return centers[cleanId];
+  const conn = centers[cleanId];
+  if (!conn) return undefined;
+
+  const store = getServerCategoryStore();
+  // If the center still points to default benchmark sheet, but the admin has connected a custom primary spreadsheet,
+  // route to the admin's saved custom sheet
+  if (
+    store.primarySpreadsheetId &&
+    store.primarySpreadsheetId !== BENCHMARK_SPREADSHEET_ID &&
+    conn.spreadsheetId === BENCHMARK_SPREADSHEET_ID &&
+    conn.status !== "disconnected"
+  ) {
+    return {
+      ...conn,
+      spreadsheetId: store.primarySpreadsheetId,
+      spreadsheetUrl: store.primarySpreadsheetUrl || conn.spreadsheetUrl,
+    };
+  }
+
+  return conn;
 }
 
 export function updateCenterConnection(
@@ -283,6 +396,90 @@ export function updateCenterConnection(
   };
 
   store.centers[cleanId] = merged;
+
+  // Persist custom sheet as primary spreadsheet so it remains permanently active
+  if (
+    merged.spreadsheetId &&
+    merged.spreadsheetId !== BENCHMARK_SPREADSHEET_ID &&
+    merged.status !== "disconnected"
+  ) {
+    store.primarySpreadsheetId = merged.spreadsheetId;
+    if (merged.spreadsheetUrl) {
+      store.primarySpreadsheetUrl = merged.spreadsheetUrl;
+    }
+  }
+
   saveServerCategoryStore(store);
   return merged;
+}
+
+export function updateAllCentersConnection(
+  updates: Partial<CenterSheetConnection>
+): Record<string, CenterSheetConnection> {
+  const store = getServerCategoryStore();
+  if (!store.centers) {
+    store.centers = { ...DEFAULT_CENTER_SHEETS_CONFIG };
+  }
+
+  if (
+    updates.spreadsheetId &&
+    updates.spreadsheetId !== BENCHMARK_SPREADSHEET_ID &&
+    updates.status !== "disconnected"
+  ) {
+    store.primarySpreadsheetId = updates.spreadsheetId;
+    if (updates.spreadsheetUrl) {
+      store.primarySpreadsheetUrl = updates.spreadsheetUrl;
+    }
+  }
+
+  for (const center of EXAMINATION_CENTERS) {
+    const cleanId = center.id.toLowerCase();
+    const existing = store.centers[cleanId] || DEFAULT_CENTER_SHEETS_CONFIG[cleanId] || {
+      centerId: cleanId,
+      centerName: center.name,
+      spreadsheetUrl: "",
+      spreadsheetId: "",
+      worksheetName: center.name,
+      headerRowIndex: 1,
+      status: "disconnected",
+      lastTestedAt: null,
+      lastSyncedAt: null,
+      columnMappings: {
+        studentName: "Name",
+        fatherName: "Father Name",
+        classOrSection: "Class",
+        schoolName: "School",
+        tehsil: center.tehsil || "Tehsil",
+        totalMarks: "Total Marks",
+        obtainedMarks: "Obt. Marks",
+        level: "Level",
+        rollNumber: "Roll No",
+      },
+      availableWorksheets: [],
+      detectedHeaders: [],
+    };
+
+    store.centers[cleanId] = {
+      ...existing,
+      ...updates,
+      centerId: cleanId,
+      centerName: center.name,
+      worksheetName: updates.worksheetName || existing.worksheetName || center.name,
+    };
+  }
+
+  // Also synchronize categories if custom spreadsheet is provided
+  if (updates.spreadsheetId && updates.spreadsheetUrl && updates.status !== "disconnected") {
+    for (const catKey of Object.keys(store.categories) as CategoryId[]) {
+      if (store.categories[catKey]) {
+        store.categories[catKey].spreadsheetId = updates.spreadsheetId;
+        store.categories[catKey].spreadsheetUrl = updates.spreadsheetUrl;
+        store.categories[catKey].status = updates.status || "connected";
+        store.categories[catKey].lastSyncedAt = new Date().toISOString();
+      }
+    }
+  }
+
+  saveServerCategoryStore(store);
+  return store.centers;
 }

@@ -143,6 +143,8 @@ export interface CategorySheetsStore {
   updatedAt: string;
   serviceAccountConfigured: boolean;
   serviceAccountEmail?: string;
+  primarySpreadsheetId?: string;
+  primarySpreadsheetUrl?: string;
   categories: Record<CategoryId, CategorySheetConnection>;
   centers?: Record<string, CenterSheetConnection>;
 }
