@@ -181,11 +181,12 @@ export default function ResultCard({
   const handleDownloadJpg = async () => {
     if (typeof window === "undefined" || !certificateRef.current) return;
 
+    let container: HTMLDivElement | null = null;
     try {
       setDownloading(true);
       const cardEl = certificateRef.current;
 
-      // 1. Ensure all certificate images (Triple E logo, Siachen Mark logo) are loaded & decoded
+      // 1. Ensure all live certificate images are loaded & decoded
       const images = Array.from(cardEl.querySelectorAll("img")) as HTMLImageElement[];
       await Promise.all(
         images.map((img) => {
@@ -213,39 +214,112 @@ export default function ResultCard({
         await document.fonts.ready;
       }
 
-      // 3. Compute pixelRatio targeting 300 DPI A4 landscape (~3508px width)
-      const currentWidth = cardEl.offsetWidth || 1024;
-      const targetWidth = 3508;
-      const pixelRatio = Math.max(2, Math.min(4, targetWidth / currentWidth));
+      // 3. Prepare an offscreen fixed-dimension A4 Landscape container
+      // A4 Landscape standard: 297mm x 210mm (at 96 DPI: 1122.5px x 793.7px)
+      // Capturing from this container guarantees identical, authentic PC A4 Landscape format
+      // on mobile phones, tablets, and desktop computers alike.
+      const targetCanvasWidth = 1122.5;
+      const targetCanvasHeight = 793.7;
 
-      // 4. Convert DOM element to high-resolution JPEG (white background, clean edges)
-      const dataUrl = await toJpeg(cardEl, {
-        quality: 0.96,
+      container = document.createElement("div");
+      container.style.position = "fixed";
+      container.style.left = "0";
+      container.style.top = "0";
+      container.style.width = `${targetCanvasWidth}px`;
+      container.style.height = `${targetCanvasHeight}px`;
+      container.style.zIndex = "-99999";
+      container.style.overflow = "hidden";
+      container.style.pointerEvents = "none";
+      container.style.opacity = "0.01";
+      container.style.backgroundColor = "#ffffff";
+
+      const clone = cardEl.cloneNode(true) as HTMLElement;
+      clone.classList.add("a4-landscape-export");
+      container.appendChild(clone);
+      document.body.appendChild(container);
+
+      // Wait a frame for browser layout and styles to calculate on the mounted clone
+      await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 60)));
+
+      // 4. Ensure images inside the clone are decoded
+      const cloneImages = Array.from(clone.querySelectorAll("img")) as HTMLImageElement[];
+      await Promise.all(
+        cloneImages.map((img) => {
+          if (img.complete && img.naturalWidth > 0) {
+            if ("decode" in img) {
+              return img.decode().catch(() => {});
+            }
+            return Promise.resolve();
+          }
+          return new Promise<void>((resolve) => {
+            img.onload = () => {
+              if ("decode" in img) {
+                img.decode().then(resolve).catch(() => resolve());
+              } else {
+                resolve();
+              }
+            };
+            img.onerror = () => resolve();
+          });
+        })
+      );
+
+      // 5. Convert to high-resolution JPEG (300 DPI A4 Landscape: 3508px x 2480px)
+      // 1122.5 * 3.125 = 3507.8px ≈ 3508px
+      // 793.7 * 3.125 = 2480.3px ≈ 2480px
+      const pixelRatio = 3.125;
+
+      const dataUrl = await toJpeg(clone, {
+        quality: 0.98,
         pixelRatio,
+        width: targetCanvasWidth,
+        height: targetCanvasHeight,
         backgroundColor: "#ffffff",
         cacheBust: true,
         style: {
           boxShadow: "none",
           margin: "0",
+          transform: "none",
         },
       });
 
-      // 5. Trigger download with student-based filename
+      // 6. Convert to Blob URL for fast and universally supported download across mobile browsers (iOS/Android)
       const sanitizedName = (result.studentName || "Student")
         .trim()
         .replace(/[^a-zA-Z0-9]+/g, "-")
         .replace(/^-+|-+$/g, "");
       const filename = `Triple-E-Certificate-${sanitizedName || "Student"}.jpg`;
 
+      // Helper to convert base64 to Blob
+      const arr = dataUrl.split(",");
+      const mime = arr[0].match(/:(.*?);/)![1];
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      const blob = new Blob([u8arr], { type: mime });
+      const blobUrl = URL.createObjectURL(blob);
+
       const link = document.createElement("a");
       link.download = filename;
-      link.href = dataUrl;
+      link.href = blobUrl;
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+
+      setTimeout(() => {
+        if (link.parentNode) {
+          document.body.removeChild(link);
+        }
+        URL.revokeObjectURL(blobUrl);
+      }, 300);
     } catch (err) {
       console.error("Failed to generate JPG certificate:", err);
     } finally {
+      if (container && container.parentNode) {
+        document.body.removeChild(container);
+      }
       setDownloading(false);
     }
   };
