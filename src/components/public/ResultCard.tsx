@@ -160,7 +160,7 @@ function getAchievementStatement(result: StudentResult): string {
     return "For achieving Merit Standing in the 2nd Quiz Competition";
   }
 
-  if (result.passFailStatus === "Passed" || (result.percentage !== undefined && result.percentage >= 50)) {
+  if (result.percentage !== undefined && result.percentage >= 50) {
     return "For successfully qualifying in the 2nd Quiz Competition";
   }
 
@@ -414,14 +414,6 @@ export default function ResultCard({
                   </div>
                 )}
 
-                {result.passFailStatus && !result.awardStatus && (
-                  <div className="cert-result-row flex items-center justify-between">
-                    <span className="cert-result-label font-bold text-[#0E2A47]">Result Status:</span>
-                    <span className={`cert-result-value font-semibold ${result.passFailStatus === "Passed" ? "text-[#065A36]" : "text-[#C52222]"}`}>
-                      {result.passFailStatus}
-                    </span>
-                  </div>
-                )}
               </div>
 
               {/* Center Thin Green Vertical Line (Desktop/Print) */}
