@@ -37,7 +37,7 @@ import {
 } from "@/lib/constants";
 
 export default function AdminSheetsPage() {
-  const [activeCenterId, setActiveCenterId] = useState<string>("khaplu");
+  const [activeCenterId, setActiveCenterId] = useState<string>("ghursay");
   const [centerConnections, setCenterConnections] = useState<Record<string, CenterSheetConnection>>(DEFAULT_CENTER_SHEETS_CONFIG);
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [searchFilter, setSearchFilter] = useState("");
@@ -575,7 +575,7 @@ export default function AdminSheetsPage() {
                 type="text"
                 value={spreadsheetUrl}
                 onChange={(e) => setSpreadsheetUrl(e.target.value)}
-                placeholder="https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit"
+                placeholder="https://docs.google.com/spreadsheets/d/1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4/edit?gid=0#gid=0"
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-300 font-mono text-xs text-navy-950 focus:ring-2 focus:ring-navy-900 focus:outline-none shadow-xs"
               />
               <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">

@@ -576,30 +576,42 @@ export async function fetchSheetValues(
     /^[a-zA-Z0-9-_]{15,80}$/.test(spreadsheetId)
   ) {
     try {
-      const gvizUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(
-        worksheetName || "Sheet1"
-      )}`;
-      const pubRes = await fetch(gvizUrl, {
-        cache: "no-store",
-        signal: AbortSignal.timeout(4000),
-      });
-      const contentType = pubRes.headers.get("content-type") || "";
-      if (pubRes.ok && !contentType.includes("text/html")) {
-        const csv = await pubRes.text();
-        if (!csv.trim().startsWith("<") && !csv.includes("<!DOCTYPE")) {
-          const parsed = parseCSV(csv);
-          if (parsed.length > 1) {
-            const headerIdx = Math.max(0, headerRowIndex - 1);
-            const headers = (parsed[headerIdx] || []).map((h) => h.trim());
-            const rows = parsed.slice(headerIdx + 1);
-            if (headers.length > 0 && rows.length > 0) {
-              return {
-                headers,
-                rows,
-                availableWorksheets: [worksheetName || "Sheet1"],
-              };
+      const gvizCandidates = [
+        worksheetName
+          ? `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(
+              worksheetName
+            )}`
+          : null,
+        `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv`,
+      ].filter(Boolean) as string[];
+
+      for (const gvizUrl of gvizCandidates) {
+        try {
+          const pubRes = await fetch(gvizUrl, {
+            cache: "no-store",
+            signal: AbortSignal.timeout(4000),
+          });
+          const contentType = pubRes.headers.get("content-type") || "";
+          if (pubRes.ok && !contentType.includes("text/html")) {
+            const csv = await pubRes.text();
+            if (!csv.trim().startsWith("<") && !csv.includes("<!DOCTYPE")) {
+              const parsed = parseCSV(csv);
+              if (parsed.length > 1) {
+                const headerIdx = Math.max(0, headerRowIndex - 1);
+                const headers = (parsed[headerIdx] || []).map((h) => h.trim());
+                const rows = parsed.slice(headerIdx + 1);
+                if (headers.length > 0 && rows.length > 0) {
+                  return {
+                    headers,
+                    rows,
+                    availableWorksheets: [worksheetName || "Ghursay" || "Sheet1"],
+                  };
+                }
+              }
             }
           }
+        } catch {
+          // try next gviz candidate URL
         }
       }
     } catch (gvizErr: any) {

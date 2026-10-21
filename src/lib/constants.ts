@@ -241,8 +241,8 @@ export const DEFAULT_CENTER_SHEETS_CONFIG: Record<string, CenterSheetConnection>
   ghursay: {
     centerId: "ghursay",
     centerName: "Ghursay",
-    spreadsheetUrl: "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit",
-    spreadsheetId: "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+    spreadsheetUrl: "https://docs.google.com/spreadsheets/d/1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4/edit?gid=0#gid=0",
+    spreadsheetId: "1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4",
     worksheetName: "Ghursay",
     headerRowIndex: 1,
     status: "connected",
@@ -259,7 +259,7 @@ export const DEFAULT_CENTER_SHEETS_CONFIG: Record<string, CenterSheetConnection>
       level: "Level",
       rollNumber: "Roll No",
     },
-    availableWorksheets: ["Ghursay"],
+    availableWorksheets: ["Ghursay", "Form Responses 1", "Sheet1"],
     detectedHeaders: ["Roll No", "Name", "Father Name", "Class", "School", "Tehsil", "Total Marks", "Obt. Marks", "Level"],
   },
   talis: {
@@ -553,8 +553,8 @@ export const COMPETITION_RULES: CompetitionRule[] = [
 export const DEFAULT_SOCIAL_LINKS: SocialLinksConfig = DEFAULT_BRANDING.socialLinks;
 
 export const DEFAULT_SHEET_CONFIG: SheetConnectionConfig = {
-  sheetId: "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
-  sheetUrl: "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit",
+  sheetId: "1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4",
+  sheetUrl: "https://docs.google.com/spreadsheets/d/1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4/edit?gid=0#gid=0",
   apiKeyConfigured: false,
   serviceAccountConfigured: false,
   selectedRange: "Results!A2:H",

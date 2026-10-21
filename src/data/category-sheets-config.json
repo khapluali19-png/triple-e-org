@@ -1,6 +1,6 @@
 {
-  "version": "2.0.0",
-  "updatedAt": "2026-10-20T20:12:01.192Z",
+  "version": "2.1.0",
+  "updatedAt": "2026-10-21T15:19:23.310Z",
   "serviceAccountConfigured": false,
   "categories": {
     "lower": {
@@ -424,13 +424,13 @@
     "ghursay": {
       "centerId": "ghursay",
       "centerName": "Ghursay",
-      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit",
-      "spreadsheetId": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4/edit?gid=0#gid=0",
+      "spreadsheetId": "1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4",
       "worksheetName": "Ghursay",
       "headerRowIndex": 1,
       "status": "connected",
-      "lastTestedAt": "2026-10-20T15:23:12.468Z",
-      "lastSyncedAt": "2026-10-20T15:23:12.468Z",
+      "lastTestedAt": "2026-10-21T15:19:23.329Z",
+      "lastSyncedAt": "2026-10-21T15:19:23.329Z",
       "columnMappings": {
         "studentName": "Name",
         "fatherName": "Father Name",
@@ -443,7 +443,9 @@
         "rollNumber": "Roll No"
       },
       "availableWorksheets": [
-        "Ghursay"
+        "Ghursay",
+        "Form Responses 1",
+        "Sheet1"
       ],
       "detectedHeaders": [
         "Roll No",
@@ -662,5 +664,7 @@
         "Level"
       ]
     }
-  }
+  },
+  "primarySpreadsheetId": "1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4",
+  "primarySpreadsheetUrl": "https://docs.google.com/spreadsheets/d/1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4/edit?gid=0#gid=0"
 }

@@ -14,6 +14,8 @@ const DEFAULT_STORE: CategorySheetsStore = {
   version: "2.1.0",
   updatedAt: new Date().toISOString(),
   serviceAccountConfigured: false,
+  primarySpreadsheetId: "1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4",
+  primarySpreadsheetUrl: "https://docs.google.com/spreadsheets/d/1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4/edit?gid=0#gid=0",
   centers: DEFAULT_CENTER_SHEETS_CONFIG,
   categories: {
     lower: {

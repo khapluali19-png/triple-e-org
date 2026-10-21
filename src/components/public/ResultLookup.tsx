@@ -26,7 +26,7 @@ interface ResultLookupProps {
 export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLookupProps) {
   const [isCountdownActive, setIsCountdownActive] = useState(() => Boolean(branding?.countdown?.enabled));
   const [studentName, setStudentName] = useState("");
-  const [examinationCenter, setExaminationCenter] = useState("khaplu");
+  const [examinationCenter, setExaminationCenter] = useState("ghursay");
   const [fatherName, setFatherName] = useState("");
   const [schoolName, setSchoolName] = useState("");
   const [loading, setLoading] = useState(false);
