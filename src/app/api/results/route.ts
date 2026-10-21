@@ -4,7 +4,8 @@ import {
   checkRateLimit, 
   lookupStudentResultFromSheet, 
   lookupStudentResultByCenter,
-  normalizeRollNumber 
+  normalizeRollNumber,
+  cleanSearchString
 } from "@/lib/server/googleSheetsService";
 import { findCenterByIdOrName } from "@/lib/constants";
 import { getWebsiteBranding } from "@/lib/server/brandingStore";
@@ -73,7 +74,8 @@ export async function GET(request: NextRequest) {
 
   // MODE A: Primary Search by Examination Center & Student Name
   if (rawStudentName !== null || rawCenter !== null) {
-    if (!rawStudentName || !rawStudentName.trim()) {
+    const cleanStudentName = cleanSearchString(rawStudentName);
+    if (!cleanStudentName) {
       return NextResponse.json(
         {
           success: false,
@@ -107,11 +109,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const cleanFatherInput = rawFather ? cleanSearchString(rawFather) : undefined;
+    const cleanSchoolInput = rawSchool ? cleanSearchString(rawSchool) : undefined;
+
     const outcome = await lookupStudentResultByCenter(
       centerInfo.id,
       rawStudentName.trim(),
-      rawFather?.trim() || undefined,
-      rawSchool?.trim() || undefined
+      cleanFatherInput || undefined,
+      cleanSchoolInput || undefined
     );
 
     if (outcome.code === "CENTER_NOT_CONFIGURED") {

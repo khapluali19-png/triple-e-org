@@ -313,14 +313,272 @@ export const HEADER_ALIASES = {
 };
 
 /**
- * Normalizes user search input strings (collapsing multiple spaces, trimmed, lowercased).
+ * Cleans string from invisible Unicode characters, diacritics, and non-breaking spaces.
  */
-export function normalizeSearchString(val: any): string {
+export function cleanSearchString(val: any): string {
   if (val === null || val === undefined) return "";
   return String(val)
-    .trim()
+    .normalize("NFKD")
+    .replace(/[\u200B-\u200D\uFEFF\u00AD]/g, "") // remove zero-width chars, soft hyphens, BOM
+    .replace(/[\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]/g, " ") // replace non-breaking spaces
     .replace(/\s+/g, " ")
+    .trim()
     .toLowerCase();
+}
+
+/**
+ * Normalizes user search input strings (collapsing multiple spaces, trimmed, lowercased, invisible chars stripped).
+ */
+export function normalizeSearchString(val: any): string {
+  return cleanSearchString(val);
+}
+
+/**
+ * Strips punctuation and symbols (dots, hyphens, brackets, quotes, commas) to standard whitespace.
+ */
+export function stripPunctuation(val: any): string {
+  return cleanSearchString(val)
+    .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()'"\[\]?]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Common transliteration dictionary for Pakistani / Balti / Urdu names.
+ * Standardizes phonetic variations such as Own <=> Awn <=> Oun <=> Aon.
+ */
+export const TRANSLITERATION_MAP: Record<string, string> = {
+  // عون (Own / Awn / Oun / Aon)
+  own: "own",
+  awn: "own",
+  oun: "own",
+  aon: "own",
+
+  // محمد
+  m: "muhammad",
+  md: "muhammad",
+  mohd: "muhammad",
+  mohammad: "muhammad",
+  muhammed: "muhammad",
+  muhamed: "muhammad",
+  mhd: "muhammad",
+
+  // سید
+  syed: "syed",
+  sayed: "syed",
+  sayyid: "syed",
+  sayeed: "syed",
+
+  // رضا
+  raza: "raza",
+  redha: "raza",
+  ridha: "raza",
+  reda: "raza",
+
+  // حسین
+  hussain: "hussain",
+  husain: "hussain",
+  husein: "hussain",
+  hussin: "hussain",
+  hossain: "hussain",
+
+  // حسن
+  hassan: "hassan",
+  hasan: "hassan",
+  hasen: "hassan",
+
+  // فاطمہ / زہرا / بتول
+  fatima: "fatima",
+  fatimah: "fatima",
+  fatma: "fatima",
+  zehra: "zehra",
+  zahra: "zehra",
+  zohra: "zehra",
+  batool: "batool",
+  batul: "batool",
+
+  // مہدی / باقر / کاظم / موسیٰ / احمد / یوسف / غلام / شکور / حیدر / جعفر / اصغر / کنول / داؤد / الیاس
+  mehdi: "mehdi",
+  mahdi: "mehdi",
+  baqir: "baqir",
+  baqar: "baqir",
+  kazim: "kazim",
+  kazem: "kazim",
+  musa: "musa",
+  moosa: "musa",
+  ahmed: "ahmed",
+  ahmad: "ahmed",
+  yousuf: "yousuf",
+  yousaf: "yousuf",
+  yusuf: "yousuf",
+  ghulam: "ghulam",
+  gulam: "ghulam",
+  shakoor: "shakoor",
+  shakur: "shakoor",
+  haider: "haider",
+  haidar: "haider",
+  hayder: "haider",
+  jaffer: "jaffer",
+  jafar: "jaffer",
+  jaffar: "jaffer",
+  asghar: "asghar",
+  asgher: "asghar",
+  daud: "daud",
+  dawood: "daud",
+  ilyas: "ilyas",
+  elias: "ilyas",
+  ismail: "ismail",
+  esmail: "ismail",
+  sadaat: "sadaat",
+  sadat: "sadaat",
+  kawal: "kawal",
+  kanwal: "kawal",
+};
+
+/**
+ * Tokenizes name and maps common transliterations and phonetic variants.
+ */
+export function canonicalizeNameTokens(val: any): string[] {
+  const stripped = stripPunctuation(val);
+  if (!stripped) return [];
+  const words = stripped.split(" ").filter(Boolean);
+  return words.map((w) => TRANSLITERATION_MAP[w] || w);
+}
+
+/**
+ * Returns a canonicalized single string for matching.
+ */
+export function canonicalizeName(val: any): string {
+  return canonicalizeNameTokens(val).join(" ");
+}
+
+/**
+ * Check if row student name matches user query string with multi-tier flexibility:
+ * - Exact normalized match
+ * - Punctuation-stripped match
+ * - Canonical transliteration match (e.g. Own Ali <=> Awn Ali <=> Oun Ali)
+ * - Word-order independent token permutation (e.g. Ali Own <=> Own Ali)
+ * - Honorific / prefix inclusion (e.g. M. Arsalan <=> Muhammad Arsalan, or Syed Own Ali <=> Own Ali)
+ */
+export function matchesStudentName(
+  rowVal: any,
+  queryVal: any,
+  tier?: "exact" | "punct" | "canonical" | "permutation" | "tokensubset"
+): boolean {
+  if (!rowVal || !queryVal) return false;
+
+  const rowNorm = normalizeSearchString(rowVal);
+  const queryNorm = normalizeSearchString(queryVal);
+  if (rowNorm === queryNorm) return true;
+  if (tier === "exact") return false;
+
+  const rowPunct = stripPunctuation(rowVal);
+  const queryPunct = stripPunctuation(queryVal);
+  if (rowPunct === queryPunct) return true;
+  if (tier === "punct") return false;
+
+  const rowTokens = canonicalizeNameTokens(rowVal);
+  const queryTokens = canonicalizeNameTokens(queryVal);
+  if (rowTokens.length === 0 || queryTokens.length === 0) return false;
+
+  const rowCanon = rowTokens.join(" ");
+  const queryCanon = queryTokens.join(" ");
+  if (rowCanon === queryCanon) return true;
+  if (tier === "canonical") return false;
+
+  // Permutation / Word-order independent
+  const rowSorted = [...rowTokens].sort().join(" ");
+  const querySorted = [...queryTokens].sort().join(" ");
+  if (rowSorted === querySorted) return true;
+  if (tier === "permutation") return false;
+
+  // Token subset / Honorific prefix handling (e.g. "M. Arsalan" / "Muhammad Arsalan" or "Syed Own Ali" / "Own Ali")
+  // Check if all tokens of one are present in the other
+  const queryInRow = queryTokens.every((t) => rowTokens.includes(t));
+  const rowInQuery = rowTokens.every((t) => queryTokens.includes(t));
+  if (queryInRow || rowInQuery) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Intelligent comparison for Father's Name verification:
+ * - Exact match
+ * - Punctuation-free match
+ * - Substring containment (e.g. "Sajjad" matching "Sajjad Hussain" or vice versa)
+ * - Canonical transliteration & token subset matching
+ */
+export function matchesFather(rowFatherVal: any, queryFatherVal: any): boolean {
+  if (!rowFatherVal || !queryFatherVal) return false;
+
+  const rowNorm = normalizeSearchString(rowFatherVal);
+  const queryNorm = normalizeSearchString(queryFatherVal);
+  if (rowNorm === queryNorm) return true;
+
+  const rowPunct = stripPunctuation(rowFatherVal);
+  const queryPunct = stripPunctuation(queryFatherVal);
+  if (rowPunct === queryPunct) return true;
+
+  // Substring containment (e.g. "Sajjad" matching "Sajjad Hussain")
+  if (rowPunct.includes(queryPunct) || queryPunct.includes(rowPunct)) {
+    return true;
+  }
+
+  const rowTokens = canonicalizeNameTokens(rowFatherVal);
+  const queryTokens = canonicalizeNameTokens(queryFatherVal);
+  if (rowTokens.length === 0 || queryTokens.length === 0) return false;
+
+  if (rowTokens.join(" ") === queryTokens.join(" ")) return true;
+
+  // Word order independent
+  if ([...rowTokens].sort().join(" ") === [...queryTokens].sort().join(" ")) return true;
+
+  // Token subset (e.g. "Sajjad" in ["sajjad", "hussain"])
+  const queryInRow = queryTokens.every((t) => rowTokens.includes(t));
+  const rowInQuery = rowTokens.every((t) => queryTokens.includes(t));
+  if (queryInRow || rowInQuery) return true;
+
+  return false;
+}
+
+/**
+ * Intelligent comparison for School Name verification:
+ * - Exact match
+ * - Punctuation-free match (e.g. "Govt. High School" matching "Govt High School")
+ * - Substring containment (e.g. "Zaki" matching "Zaki Academy")
+ * - Token overlap (shared significant non-generic tokens like "zaki", "skarchan", "raisha")
+ */
+export function matchesSchool(rowSchoolVal: any, querySchoolVal: any): boolean {
+  if (!rowSchoolVal || !querySchoolVal) return false;
+
+  const rowNorm = normalizeSearchString(rowSchoolVal);
+  const queryNorm = normalizeSearchString(querySchoolVal);
+  if (rowNorm === queryNorm) return true;
+
+  const rowPunct = stripPunctuation(rowSchoolVal);
+  const queryPunct = stripPunctuation(querySchoolVal);
+  if (rowPunct === queryPunct) return true;
+
+  // Substring containment
+  if (rowPunct.includes(queryPunct) || queryPunct.includes(rowPunct)) {
+    return true;
+  }
+
+  // Token overlap on significant terms
+  const stopWords = new Set(["school", "college", "public", "high", "primary", "academy", "govt", "government"]);
+  const rowTokens = rowPunct.split(" ").filter((w: string) => w && !stopWords.has(w));
+  const queryTokens = queryPunct.split(" ").filter((w: string) => w && !stopWords.has(w));
+
+  if (rowTokens.length > 0 && queryTokens.length > 0) {
+    const hasOverlap = queryTokens.some(
+      (t: string) => rowTokens.includes(t) || rowTokens.some((rt: string) => rt.includes(t) || t.includes(rt))
+    );
+    if (hasOverlap) return true;
+  }
+
+  return false;
 }
 
 /**
@@ -589,7 +847,7 @@ export async function fetchSheetValues(
         try {
           const pubRes = await fetch(gvizUrl, {
             cache: "no-store",
-            signal: AbortSignal.timeout(4000),
+            signal: AbortSignal.timeout(10000),
           });
           const contentType = pubRes.headers.get("content-type") || "";
           if (pubRes.ok && !contentType.includes("text/html")) {
@@ -599,7 +857,8 @@ export async function fetchSheetValues(
               if (parsed.length > 1) {
                 const headerIdx = Math.max(0, headerRowIndex - 1);
                 const headers = (parsed[headerIdx] || []).map((h) => h.trim());
-                const rows = parsed.slice(headerIdx + 1);
+                const rawRows = parsed.slice(headerIdx + 1);
+                const rows = rawRows.filter((r) => r.some((c) => c && c.trim().length > 0));
                 if (headers.length > 0 && rows.length > 0) {
                   return {
                     headers,
@@ -1177,6 +1436,8 @@ export function getCenterBenchmarkSheetData(
       headers,
       rows: [
         ["GH-901", "Daud Khan", "Ilyas", "Class 10", "Govt High School Ghursay", "Ghursay", "100", "87", "Level 2"],
+        ["GH-902", "Own Ali", "Sajjad Hussain", "5th", "Zaki Academy", "Mashabrum", "50", "17", "Level 1"],
+        ["GH-903", "Amina Kawal", "M. Baqir", "5th", "Primary School Raisha", "Mashabrum", "50", "23", "Level 1"],
       ],
       availableWorksheets: ["Ghursay"],
     };
@@ -1382,11 +1643,44 @@ export async function lookupStudentResultByCenter(
     };
   }
 
-  // 4. Filter candidate rows by exact normalized student name
-  const nameMatches: string[][] = rows.filter((r) => {
+  // 4. Progressive filtering of candidate rows by student name
+  // Tier 1: Exact normalized equality
+  let nameMatches: string[][] = rows.filter((r) => {
     const val = r[nameColIdx];
-    return normalizeSearchString(val) === cleanName;
+    return matchesStudentName(val, studentNameInput, "exact");
   });
+
+  // Tier 2: Punctuation-free equality (if no exact matches)
+  if (nameMatches.length === 0) {
+    nameMatches = rows.filter((r) => {
+      const val = r[nameColIdx];
+      return matchesStudentName(val, studentNameInput, "punct");
+    });
+  }
+
+  // Tier 3: Canonical transliteration equality (Own <=> Awn <=> Oun <=> Aon)
+  if (nameMatches.length === 0) {
+    nameMatches = rows.filter((r) => {
+      const val = r[nameColIdx];
+      return matchesStudentName(val, studentNameInput, "canonical");
+    });
+  }
+
+  // Tier 4: Word order permutation (Ali Own <=> Own Ali)
+  if (nameMatches.length === 0) {
+    nameMatches = rows.filter((r) => {
+      const val = r[nameColIdx];
+      return matchesStudentName(val, studentNameInput, "permutation");
+    });
+  }
+
+  // Tier 5: Token subset / honorific prefix handling (Muhammad Arsalan <=> M. Arsalan, Syed Own Ali <=> Own Ali)
+  if (nameMatches.length === 0) {
+    nameMatches = rows.filter((r) => {
+      const val = r[nameColIdx];
+      return matchesStudentName(val, studentNameInput, "tokensubset");
+    });
+  }
 
   if (nameMatches.length === 0) {
     return {
@@ -1396,31 +1690,21 @@ export async function lookupStudentResultByCenter(
     };
   }
 
-  const cleanFather = fatherNameInput ? normalizeSearchString(fatherNameInput) : null;
-  const cleanSchool = schoolNameInput ? normalizeSearchString(schoolNameInput) : null;
+  const cleanFather = fatherNameInput ? fatherNameInput.trim() : null;
+  const cleanSchool = schoolNameInput ? schoolNameInput.trim() : null;
 
   let selectedCandidate: string[] | null = null;
-
-  // Helper to compare school names with partial or exact match
-  const matchesSchool = (rowSchoolVal: string, querySchoolVal: string): boolean => {
-    if (!rowSchoolVal || !querySchoolVal) return false;
-    return (
-      rowSchoolVal === querySchoolVal ||
-      rowSchoolVal.includes(querySchoolVal) ||
-      querySchoolVal.includes(rowSchoolVal)
-    );
-  };
 
   // Case A: Exactly 1 student found with this name in this center
   if (nameMatches.length === 1) {
     const single = nameMatches[0];
-    const rowFather = fatherColIdx !== -1 ? normalizeSearchString(single[fatherColIdx]) : "";
-    const rowSchool = schoolColIdx !== -1 ? normalizeSearchString(single[schoolColIdx]) : "";
+    const rowFather = fatherColIdx !== -1 ? single[fatherColIdx] : "";
+    const rowSchool = schoolColIdx !== -1 ? single[schoolColIdx] : "";
 
     // If fatherName was provided by user
     if (cleanFather) {
-      if (rowFather) {
-        if (rowFather !== cleanFather) {
+      if (rowFather && rowFather.trim()) {
+        if (!matchesFather(rowFather, cleanFather)) {
           // Father name does NOT match! Check if school name rescues it
           if (cleanSchool && rowSchool && matchesSchool(rowSchool, cleanSchool)) {
             selectedCandidate = single;
@@ -1443,7 +1727,7 @@ export async function lookupStudentResultByCenter(
           selectedCandidate = single;
         }
       } else {
-        // Father name is missing from the spreadsheet row -> do not reject as per Req 5
+        // Father name is missing from the spreadsheet row -> check school if provided
         if (cleanSchool && rowSchool && !matchesSchool(rowSchool, cleanSchool)) {
           return {
             success: false,
@@ -1466,18 +1750,18 @@ export async function lookupStudentResultByCenter(
       selectedCandidate = single;
     }
   } else {
-    // Case B: Multiple students share the exact same name in this center!
+    // Case B: Multiple students share the matching name in this center!
     // Disambiguation protocol:
     if (cleanFather) {
       const fatherMatches = nameMatches.filter((r) => {
-        const rf = fatherColIdx !== -1 ? normalizeSearchString(r[fatherColIdx]) : "";
-        return rf === cleanFather;
+        const rf = fatherColIdx !== -1 ? r[fatherColIdx] : "";
+        return matchesFather(rf, cleanFather);
       });
 
       if (fatherMatches.length === 1) {
         // Uniquely identified by father name
         const match = fatherMatches[0];
-        const rowSchool = schoolColIdx !== -1 ? normalizeSearchString(match[schoolColIdx]) : "";
+        const rowSchool = schoolColIdx !== -1 ? match[schoolColIdx] : "";
         if (cleanSchool && rowSchool && !matchesSchool(rowSchool, cleanSchool)) {
           return {
             success: false,
@@ -1490,7 +1774,7 @@ export async function lookupStudentResultByCenter(
         // Multiple students have same name AND same father -> check school name
         if (cleanSchool) {
           const schoolMatches = fatherMatches.filter((r) => {
-            const rs = schoolColIdx !== -1 ? normalizeSearchString(r[schoolColIdx]) : "";
+            const rs = schoolColIdx !== -1 ? r[schoolColIdx] : "";
             return matchesSchool(rs, cleanSchool);
           });
           if (schoolMatches.length === 1) {
@@ -1516,7 +1800,7 @@ export async function lookupStudentResultByCenter(
         if (cleanSchool) {
           // Fallback: check if school name uniquely matches any of the candidates
           const schoolMatches = nameMatches.filter((r) => {
-            const rs = schoolColIdx !== -1 ? normalizeSearchString(r[schoolColIdx]) : "";
+            const rs = schoolColIdx !== -1 ? r[schoolColIdx] : "";
             return matchesSchool(rs, cleanSchool);
           });
           if (schoolMatches.length === 1) {
@@ -1539,7 +1823,7 @@ export async function lookupStudentResultByCenter(
     } else if (cleanSchool) {
       // User did not provide father name, but provided school name
       const schoolMatches = nameMatches.filter((r) => {
-        const rs = schoolColIdx !== -1 ? normalizeSearchString(r[schoolColIdx]) : "";
+        const rs = schoolColIdx !== -1 ? r[schoolColIdx] : "";
         return matchesSchool(rs, cleanSchool);
       });
 

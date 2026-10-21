@@ -39,10 +39,44 @@ export function getLevelDescription(level?: string): string {
 
 export function findCenterByIdOrName(centerQuery: string): ExaminationCenterInfo | undefined {
   if (!centerQuery) return undefined;
-  const q = centerQuery.trim().toLowerCase();
-  return EXAMINATION_CENTERS.find(
-    (c) => c.id.toLowerCase() === q || c.name.toLowerCase() === q
+  const raw = String(centerQuery).trim().toLowerCase();
+  if (!raw) return undefined;
+
+  // 1. Exact match on id, name, or tehsil
+  const exact = EXAMINATION_CENTERS.find(
+    (c) =>
+      c.id.toLowerCase() === raw ||
+      c.name.toLowerCase() === raw ||
+      (c.tehsil && c.tehsil.toLowerCase() === raw)
   );
+  if (exact) return exact;
+
+  // 2. Normalized matching (stripping words like "center", "centre", "examination", "exam", "tehsil")
+  const clean = raw
+    .replace(/\b(center|centre|examination|exam|tehsil)\b/gi, "")
+    .replace(/[^a-z0-9]/gi, "")
+    .trim();
+
+  if (clean) {
+    const slugMatch = EXAMINATION_CENTERS.find((c) => {
+      const cIdClean = c.id.replace(/[^a-z0-9]/gi, "").toLowerCase();
+      const cNameClean = c.name.replace(/[^a-z0-9]/gi, "").toLowerCase();
+      return (
+        cIdClean === clean ||
+        cNameClean === clean ||
+        clean.startsWith(cIdClean) ||
+        clean.startsWith(cNameClean)
+      );
+    });
+    if (slugMatch) return slugMatch;
+  }
+
+  // 3. Fallback: contains check
+  return EXAMINATION_CENTERS.find((c) => {
+    const cId = c.id.toLowerCase();
+    const cName = c.name.toLowerCase();
+    return raw.includes(cId) || raw.includes(cName);
+  });
 }
 
 export const DEFAULT_CENTER_SHEETS_CONFIG: Record<string, CenterSheetConnection> = {

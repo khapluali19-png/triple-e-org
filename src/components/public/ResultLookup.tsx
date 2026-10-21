@@ -401,6 +401,18 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
                 <button
                   type="button"
                   disabled={isCountdownActive}
+                  onClick={() => handleQuickTest("Own Ali", "ghursay", "Sajjad Hussain", "Zaki Academy")}
+                  className={`px-2.5 py-1 rounded-md text-xs border border-[#E6E9EE] transition-colors ${
+                    isCountdownActive 
+                      ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
+                      : "bg-[#183153] hover:bg-[#12243d] text-white font-medium cursor-pointer shadow-2xs"
+                  }`}
+                >
+                  Own Ali (Ghursay, Level 1)
+                </button>
+                <button
+                  type="button"
+                  disabled={isCountdownActive}
                   onClick={() => handleQuickTest("Ali Raza", "khaplu", "Muhammad Hussain")}
                   className={`px-2.5 py-1 rounded-md text-xs border border-[#E6E9EE] transition-colors ${
                     isCountdownActive 
