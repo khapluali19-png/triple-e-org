@@ -1,11 +1,13 @@
 import fs from "fs";
 import path from "path";
+import os from "os";
 import { WebsiteBrandingConfig } from "../types";
 import { DEFAULT_BRANDING } from "../constants";
 import { logAdminActivity } from "./adminAuthStore";
 
 const DATA_DIR = path.join(process.cwd(), "src", "data");
 const BRANDING_FILE = path.join(DATA_DIR, "branding-config.json");
+const TMP_BRANDING_FILE = path.join(os.tmpdir(), "triple-e-branding-config.json");
 
 function ensureDirExists(dirPath: string) {
   if (!fs.existsSync(dirPath)) {
@@ -25,63 +27,113 @@ export function isValidWebUrl(url?: string): boolean {
     return false;
   }
 }
+
 /**
- * Retrieves server-side website branding settings.
+ * In-memory branding runtime cache and last write timestamp
  */
 let inMemoryBranding: WebsiteBrandingConfig | null = null;
+let lastPersistedTimestamp = 0;
 
-export function getWebsiteBranding(): WebsiteBrandingConfig {
-  ensureDirExists(DATA_DIR);
+/**
+ * Retrieves server-side website branding settings.
+ * Supports /tmp fallback for serverless environments (e.g. Vercel)
+ * and optional override (e.g. from cookie or query).
+ */
+export function getWebsiteBranding(overrideCountdownEnabled?: boolean): WebsiteBrandingConfig {
+  let fileContent: string | null = null;
+  let fileMtime = 0;
 
-  if (!fs.existsSync(BRANDING_FILE)) {
-    if (inMemoryBranding) return inMemoryBranding;
-    try {
-      fs.writeFileSync(BRANDING_FILE, JSON.stringify(DEFAULT_BRANDING, null, 2), "utf-8");
-    } catch {
-      // serverless read-only
-    }
-    inMemoryBranding = DEFAULT_BRANDING;
-    return DEFAULT_BRANDING;
-  }
-
+  // 1. Check /tmp file first (written by runtime in serverless environments)
   try {
-    const raw = fs.readFileSync(BRANDING_FILE, "utf-8");
-    const parsed = JSON.parse(raw);
-    const resolved: WebsiteBrandingConfig = {
-      ...DEFAULT_BRANDING,
-      ...parsed,
-      socialLinks: {
-        ...DEFAULT_BRANDING.socialLinks,
-        ...(parsed.socialLinks || {}),
-      },
-      lookupLabels: {
-        ...DEFAULT_BRANDING.lookupLabels,
-        ...(parsed.lookupLabels || {}),
-      },
-      resultCardLabels: {
-        ...DEFAULT_BRANDING.resultCardLabels,
-        ...(parsed.resultCardLabels || {}),
-      },
-      fieldVisibility: {
-        ...DEFAULT_BRANDING.fieldVisibility,
-        ...(parsed.fieldVisibility || {}),
-      },
-      partnerAttribution: {
-        ...DEFAULT_BRANDING.partnerAttribution,
-        ...(parsed.partnerAttribution || {}),
-      },
-      countdown: {
-        ...(DEFAULT_BRANDING.countdown || {}),
-        ...(parsed.countdown || {}),
-      },
-    };
-    inMemoryBranding = resolved;
-    return resolved;
-  } catch (err) {
-    console.error("Failed to read branding config file, using defaults:", err);
-    inMemoryBranding = DEFAULT_BRANDING;
-    return DEFAULT_BRANDING;
+    if (fs.existsSync(TMP_BRANDING_FILE)) {
+      const stats = fs.statSync(TMP_BRANDING_FILE);
+      fileMtime = stats.mtimeMs;
+      fileContent = fs.readFileSync(TMP_BRANDING_FILE, "utf-8");
+    }
+  } catch {
+    // /tmp read error ignored
   }
+
+  // 2. Check repo/workspace BRANDING_FILE; if newer than /tmp, prefer it
+  try {
+    ensureDirExists(DATA_DIR);
+    if (fs.existsSync(BRANDING_FILE)) {
+      const stats = fs.statSync(BRANDING_FILE);
+      if (!fileContent || stats.mtimeMs > fileMtime) {
+        fileContent = fs.readFileSync(BRANDING_FILE, "utf-8");
+        fileMtime = stats.mtimeMs;
+      }
+    }
+  } catch {
+    // file read error ignored
+  }
+
+  // 3. If in-memory branding has a fresher timestamp than files on disk, use inMemoryBranding
+  if (inMemoryBranding && lastPersistedTimestamp >= fileMtime && (fileContent !== null || lastPersistedTimestamp > 0)) {
+    const result = { ...inMemoryBranding };
+    if (overrideCountdownEnabled !== undefined && result.countdown) {
+      result.countdown = { ...result.countdown, enabled: overrideCountdownEnabled };
+      result.resultsPublished = !overrideCountdownEnabled;
+    }
+    return result;
+  }
+
+  // 4. Parse file content if available
+  if (fileContent) {
+    try {
+      const parsed = JSON.parse(fileContent);
+      const resolved: WebsiteBrandingConfig = {
+        ...DEFAULT_BRANDING,
+        ...parsed,
+        socialLinks: {
+          ...DEFAULT_BRANDING.socialLinks,
+          ...(parsed.socialLinks || {}),
+        },
+        lookupLabels: {
+          ...DEFAULT_BRANDING.lookupLabels,
+          ...(parsed.lookupLabels || {}),
+        },
+        resultCardLabels: {
+          ...DEFAULT_BRANDING.resultCardLabels,
+          ...(parsed.resultCardLabels || {}),
+        },
+        fieldVisibility: {
+          ...DEFAULT_BRANDING.fieldVisibility,
+          ...(parsed.fieldVisibility || {}),
+        },
+        partnerAttribution: {
+          ...DEFAULT_BRANDING.partnerAttribution,
+          ...(parsed.partnerAttribution || {}),
+        },
+        countdown: {
+          ...(DEFAULT_BRANDING.countdown || {}),
+          ...(parsed.countdown || {}),
+        },
+      };
+
+      if (overrideCountdownEnabled !== undefined && resolved.countdown) {
+        resolved.countdown = { ...resolved.countdown, enabled: overrideCountdownEnabled };
+        resolved.resultsPublished = !overrideCountdownEnabled;
+      }
+
+      inMemoryBranding = resolved;
+      lastPersistedTimestamp = fileMtime;
+      return resolved;
+    } catch (err) {
+      console.error("Failed to parse branding config file, using fallback:", err);
+    }
+  }
+
+  // 5. Fallback to inMemoryBranding or DEFAULT_BRANDING
+  const fallback = inMemoryBranding || DEFAULT_BRANDING;
+  if (overrideCountdownEnabled !== undefined && fallback.countdown) {
+    return {
+      ...fallback,
+      countdown: { ...fallback.countdown, enabled: overrideCountdownEnabled },
+      resultsPublished: !overrideCountdownEnabled,
+    };
+  }
+  return fallback;
 }
 
 /**
@@ -146,7 +198,18 @@ export function saveWebsiteBranding(
   };
 
   inMemoryBranding = merged;
+  lastPersistedTimestamp = Date.now();
 
+  // 1. Write to /tmp (guaranteed writable across AWS Lambda, Vercel Serverless, Linux, Mac, Windows)
+  try {
+    const tmpTempFile = `${TMP_BRANDING_FILE}.tmp.${Date.now()}`;
+    fs.writeFileSync(tmpTempFile, JSON.stringify(merged, null, 2), "utf-8");
+    fs.renameSync(tmpTempFile, TMP_BRANDING_FILE);
+  } catch (err: any) {
+    console.warn("[BrandingStore] /tmp write failed:", err?.message || err);
+  }
+
+  // 2. Write to repository workspace file (works in local dev and dedicated persistent servers)
   try {
     ensureDirExists(DATA_DIR);
     const tempFile = `${BRANDING_FILE}.tmp.${Date.now()}`;

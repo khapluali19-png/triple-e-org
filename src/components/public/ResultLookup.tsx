@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { 
   Search, 
   AlertCircle, 
@@ -24,7 +24,7 @@ interface ResultLookupProps {
 }
 
 export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLookupProps) {
-  const isCountdownActive = Boolean(branding?.countdown?.enabled);
+  const [isCountdownActive, setIsCountdownActive] = useState(() => Boolean(branding?.countdown?.enabled));
   const [studentName, setStudentName] = useState("");
   const [examinationCenter, setExaminationCenter] = useState("khaplu");
   const [fatherName, setFatherName] = useState("");
@@ -39,6 +39,32 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
   const [result, setResult] = useState<StudentResult | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Sync with prop updates
+  useEffect(() => {
+    setIsCountdownActive(Boolean(branding?.countdown?.enabled));
+  }, [branding?.countdown?.enabled]);
+
+  // Client-side synchronization with /api/branding to guarantee latest setting after admin toggle
+  useEffect(() => {
+    async function syncStatus() {
+      try {
+        const res = await fetch("/api/branding", {
+          cache: "no-store",
+          headers: { "Cache-Control": "no-cache" },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.branding?.countdown) {
+            setIsCountdownActive(Boolean(data.branding.countdown.enabled));
+          }
+        }
+      } catch {
+        // non-blocking fallback
+      }
+    }
+    syncStatus();
+  }, []);
 
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();

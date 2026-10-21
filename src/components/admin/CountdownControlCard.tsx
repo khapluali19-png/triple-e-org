@@ -68,7 +68,10 @@ export default function CountdownControlCard({
     async function fetchStatus() {
       try {
         setLoading(true);
-        const res = await fetch("/api/admin/countdown");
+        const res = await fetch("/api/admin/countdown", {
+          cache: "no-store",
+          headers: { "Cache-Control": "no-cache" },
+        });
         if (res.ok) {
           const data = await res.json();
           if (data.countdown) {
@@ -104,6 +107,9 @@ export default function CountdownControlCard({
 
       if (res.ok && data.success) {
         setCountdown((prev) => ({ ...prev, enabled: nextState }));
+        if (typeof document !== "undefined") {
+          document.cookie = `countdown_enabled=${nextState}; path=/; max-age=31536000; SameSite=Lax`;
+        }
         setFeedback({
           type: "success",
           message: nextState

@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { DEFAULT_BRANDING } from "@/lib/constants";
@@ -8,8 +11,31 @@ interface HeroProps {
 }
 
 export default function Hero({ branding = DEFAULT_BRANDING }: HeroProps) {
+  const [isCountdown, setIsCountdown] = useState(() => Boolean(branding.countdown?.enabled));
   const headline = branding.mainHeadline || "Celebrating Knowledge.\nInspiring Young Minds.";
   const headlineLines = headline.split("\n");
+
+  useEffect(() => {
+    setIsCountdown(Boolean(branding.countdown?.enabled));
+  }, [branding.countdown?.enabled]);
+
+  useEffect(() => {
+    async function syncStatus() {
+      try {
+        const res = await fetch("/api/branding", {
+          cache: "no-store",
+          headers: { "Cache-Control": "no-cache" },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.branding?.countdown) {
+            setIsCountdown(Boolean(data.branding.countdown.enabled));
+          }
+        }
+      } catch {}
+    }
+    syncStatus();
+  }, []);
 
   return (
     <section className="relative bg-white pt-12 pb-16 sm:pt-18 sm:pb-24 lg:pt-24 lg:pb-32 border-b border-[#E6E9EE]">
@@ -49,10 +75,10 @@ export default function Hero({ branding = DEFAULT_BRANDING }: HeroProps) {
             {/* Result Lookup Action Button */}
             <div className="pt-2 flex flex-wrap items-center gap-4">
               <a
-                href={branding.countdown?.enabled ? "#result-announcement" : "#result-lookup"}
+                href={isCountdown ? "#result-announcement" : "#result-lookup"}
                 className="inline-flex items-center justify-center px-6 py-3 rounded-lg text-sm sm:text-base font-semibold bg-[#183153] hover:bg-[#12243d] text-white transition-colors shadow-xs gap-2 group"
               >
-                <span>{branding.countdown?.enabled ? "View Result Announcement" : "Check Your Result"}</span>
+                <span>{isCountdown ? "View Result Announcement" : "Check Your Result"}</span>
                 <ArrowRight className="w-4 h-4 text-white group-hover:translate-x-0.5 transition-transform" />
               </a>
 

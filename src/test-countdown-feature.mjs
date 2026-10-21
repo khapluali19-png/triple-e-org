@@ -62,6 +62,15 @@ async function loginAdmin() {
 }
 
 async function runTests() {
+  // Set initial countdown to ON so the test can verify ON -> OFF -> ON transitions
+  const configPath = path.join(process.cwd(), "src/data/branding-config.json");
+  if (fs.existsSync(configPath)) {
+    const cfg = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+    cfg.countdown = { ...(cfg.countdown || {}), enabled: true };
+    cfg.resultsPublished = false;
+    fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2), "utf-8");
+  }
+
   try {
     await startServer();
 
@@ -135,20 +144,40 @@ async function runTests() {
     const turnOffData = await turnOffRes.json();
     assert(turnOffData.success === true, "Toggle response success is true");
     assert(turnOffData.countdown.enabled === false, "Countdown enabled is now false");
-    console.log("  ✔ [PASS] Admin successfully switched countdown to OFF");
+    const turnOffCookies = turnOffRes.headers.get("set-cookie") || "";
+    assert(turnOffCookies.includes("countdown_enabled=false"), "Cookie countdown_enabled=false must be set on response");
+    console.log("  ✔ [PASS] Admin successfully switched countdown to OFF with synchronization cookie");
 
     // -------------------------------------------------------------
     // Scenario 5: Verify Behavior When Countdown is OFF
     // -------------------------------------------------------------
     console.log("\n--- Scenario 5: Verify Behavior When Countdown is OFF ---");
-    // 1. Check countdown section is NOT rendered on homepage
-    const homeOffRes = await fetch(`${BASE_URL}/`);
-    const homeOffHtml = await homeOffRes.text();
-    assert(!homeOffHtml.includes("id=\"result-announcement\""), "Countdown section must be hidden when OFF");
-    console.log("  ✔ [PASS] Countdown section is completely hidden from public website when OFF");
+    // 1. Check countdown section is NOT rendered on homepage after refresh (multiple fetches)
+    for (let refresh = 1; refresh <= 3; refresh++) {
+      const homeOffRes = await fetch(`${BASE_URL}/`, {
+        headers: { "Cookie": "countdown_enabled=false" },
+        cache: "no-store",
+      });
+      const homeOffHtml = await homeOffRes.text();
+      assert(!homeOffHtml.includes("id=\"result-announcement\""), `Countdown section must be hidden when OFF (refresh #${refresh})`);
+    }
+    console.log("  ✔ [PASS] Countdown section is completely hidden from public website across multiple refreshes when OFF");
 
-    // 2. Check result search is NOW ACTIVE and returns candidate results
-    const activeSearchRes = await fetch(`${BASE_URL}/api/results?studentName=Ali+Raza&center=khaplu`);
+    // 2. Check /api/branding returns updated status with no-store cache headers
+    const brandingRes = await fetch(`${BASE_URL}/api/branding`, {
+      headers: { "Cookie": "countdown_enabled=false" },
+      cache: "no-store",
+    });
+    const brandingData = await brandingRes.json();
+    assert(brandingData.branding.countdown.enabled === false, "/api/branding returns enabled: false");
+    const cacheHeader = brandingRes.headers.get("cache-control") || "";
+    assert(cacheHeader.includes("no-store"), "/api/branding must return Cache-Control: no-store");
+    console.log("  ✔ [PASS] /api/branding immediately returns countdown.enabled: false with Cache-Control: no-store");
+
+    // 3. Check result search is NOW ACTIVE and returns candidate results
+    const activeSearchRes = await fetch(`${BASE_URL}/api/results?studentName=Ali+Raza&center=khaplu`, {
+      headers: { "Cookie": "countdown_enabled=false" },
+    });
     assert(activeSearchRes.status === 200, `Result search returns HTTP 200 OK when countdown is OFF, got ${activeSearchRes.status}`);
     const activeData = await activeSearchRes.json();
     assert(activeData.success === true, "Lookup succeeds");
@@ -192,8 +221,41 @@ async function runTests() {
     assert(targetUtcIso === "2026-10-25T06:30:00.000Z", `Target UTC must be 2026-10-25T06:30:00.000Z, got ${targetUtcIso}`);
     console.log(`  ✔ [PASS] PKT (+05:00) parsed reliably to UTC epoch: ${targetUtcIso}`);
 
+    // -------------------------------------------------------------
+    // Scenario 8: Admin Switches Countdown to OFF (Two-Way Cycle Verification)
+    // -------------------------------------------------------------
+    console.log("\n--- Scenario 8: Admin Switches Countdown to OFF (Two-Way Cycle Verification) ---");
+    const toggleOffFinalRes = await fetch(`${BASE_URL}/api/admin/countdown`, {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "Cookie": sessionCookie,
+      },
+      body: JSON.stringify({ enabled: false }),
+    });
+    assert(toggleOffFinalRes.status === 200, "Authenticated toggle to OFF returns HTTP 200 OK");
+    const toggleOffFinalData = await toggleOffFinalRes.json();
+    assert(toggleOffFinalData.countdown.enabled === false, "Countdown enabled is false");
+
+    // Verify public website hides countdown section
+    const finalHomeRes = await fetch(`${BASE_URL}/`, {
+      headers: { "Cookie": "countdown_enabled=false" },
+      cache: "no-store",
+    });
+    const finalHomeHtml = await finalHomeRes.text();
+    assert(!finalHomeHtml.includes("id=\"result-announcement\""), "Countdown section is hidden when OFF");
+
+    // Verify search works immediately
+    const finalSearchRes = await fetch(`${BASE_URL}/api/results?studentName=Ali+Raza&center=khaplu`, {
+      headers: { "Cookie": "countdown_enabled=false" },
+    });
+    assert(finalSearchRes.status === 200, "Result search is active and returns HTTP 200 OK");
+    const finalSearchData = await finalSearchRes.json();
+    assert(finalSearchData.result.studentName === "Ali Raza", "Student found: Ali Raza");
+    console.log("  ✔ [PASS] Two-way ON/OFF cycle fully verified: Countdown hides and search restores reliably");
+
     console.log("\n==================================================================");
-    console.log("   🎉 ALL 7 COUNTDOWN QA SCENARIOS PASSED WITH ZERO ERRORS!      ");
+    console.log("   🎉 ALL 8 COUNTDOWN QA SCENARIOS PASSED WITH ZERO ERRORS!      ");
     console.log("==================================================================");
   } finally {
     if (serverProcess) {

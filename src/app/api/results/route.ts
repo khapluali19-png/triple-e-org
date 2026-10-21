@@ -34,7 +34,8 @@ export async function GET(request: NextRequest) {
   }
 
   // 1.5. Result Announcement Restriction Check (When Countdown is ON)
-  const branding = getWebsiteBranding();
+  const cookieVal = request.cookies.get("countdown_enabled")?.value;
+  const branding = getWebsiteBranding(cookieVal ? cookieVal === "true" : undefined);
   if (branding.countdown?.enabled) {
     return NextResponse.json(
       {
@@ -48,7 +49,12 @@ export async function GET(request: NextRequest) {
           venue: branding.countdown.venue,
         },
       },
-      { status: 403 }
+      {
+        status: 403,
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        },
+      }
     );
   }
 

@@ -45,7 +45,34 @@ export default function CountdownSection({ branding = DEFAULT_BRANDING }: Countd
   const countdown = branding.countdown;
   const targetIso = countdown?.targetDate || DEFAULT_TARGET_ISO;
 
+  const [isVisible, setIsVisible] = useState(() => Boolean(branding.countdown?.enabled ?? true));
   const [timeLeft, setTimeLeft] = useState<TimeRemaining>(() => calculateTimeRemaining(targetIso));
+
+  // Sync with prop updates
+  useEffect(() => {
+    setIsVisible(Boolean(branding.countdown?.enabled ?? true));
+  }, [branding.countdown?.enabled]);
+
+  // Client-side synchronization with /api/branding to guarantee latest setting after admin toggle
+  useEffect(() => {
+    async function syncStatus() {
+      try {
+        const res = await fetch("/api/branding", {
+          cache: "no-store",
+          headers: { "Cache-Control": "no-cache" },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.branding?.countdown) {
+            setIsVisible(Boolean(data.branding.countdown.enabled));
+          }
+        }
+      } catch {
+        // non-blocking fallback
+      }
+    }
+    syncStatus();
+  }, []);
 
   useEffect(() => {
     // Initial sync
@@ -57,6 +84,11 @@ export default function CountdownSection({ branding = DEFAULT_BRANDING }: Countd
 
     return () => clearInterval(interval);
   }, [targetIso]);
+
+  // If disabled by admin, hide completely from public website
+  if (!isVisible) {
+    return null;
+  }
 
   const organization = countdown?.organization || "Triple E Organization Gilgit-Baltistan";
   const eventTitle = countdown?.eventTitle || "Taqreeb-e-Taqseem Inaamaat wa Taleemi Seminar";

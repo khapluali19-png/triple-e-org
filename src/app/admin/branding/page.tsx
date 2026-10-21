@@ -35,7 +35,10 @@ export default function AdminBrandingPage() {
   useEffect(() => {
     async function loadBranding() {
       try {
-        const res = await fetch("/api/admin/branding");
+        const res = await fetch("/api/admin/branding", {
+          cache: "no-store",
+          headers: { "Cache-Control": "no-cache" },
+        });
         if (res.ok) {
           const data = await res.json();
           if (data.branding) {

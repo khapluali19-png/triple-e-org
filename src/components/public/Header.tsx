@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Menu, X } from "lucide-react";
@@ -13,6 +13,29 @@ interface HeaderProps {
 
 export default function Header({ branding = DEFAULT_BRANDING }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isCountdown, setIsCountdown] = useState(() => Boolean(branding.countdown?.enabled));
+
+  useEffect(() => {
+    setIsCountdown(Boolean(branding.countdown?.enabled));
+  }, [branding.countdown?.enabled]);
+
+  useEffect(() => {
+    async function syncStatus() {
+      try {
+        const res = await fetch("/api/branding", {
+          cache: "no-store",
+          headers: { "Cache-Control": "no-cache" },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.branding?.countdown) {
+            setIsCountdown(Boolean(data.branding.countdown.enabled));
+          }
+        }
+      } catch {}
+    }
+    syncStatus();
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-[#E6E9EE]">
@@ -70,10 +93,10 @@ export default function Header({ branding = DEFAULT_BRANDING }: HeaderProps) {
           {/* Right: Simple, Prominent "Check Result" Action */}
           <div className="hidden sm:flex items-center">
             <Link
-              href={branding.countdown?.enabled ? "/#result-announcement" : "/#result-lookup"}
+              href={isCountdown ? "/#result-announcement" : "/#result-lookup"}
               className="inline-flex items-center justify-center px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-[#183153] hover:bg-[#12243d] text-white shadow-xs transition-colors"
             >
-              {branding.countdown?.enabled ? "Announcement" : "Check Result"}
+              {isCountdown ? "Announcement" : "Check Result"}
             </Link>
           </div>
 
@@ -121,11 +144,11 @@ export default function Header({ branding = DEFAULT_BRANDING }: HeaderProps) {
           </Link>
           <div className="pt-2">
             <Link
-              href={branding.countdown?.enabled ? "/#result-announcement" : "/#result-lookup"}
+              href={isCountdown ? "/#result-announcement" : "/#result-lookup"}
               onClick={() => setMobileMenuOpen(false)}
               className="w-full inline-flex items-center justify-center px-4 py-2.5 rounded-lg text-sm font-semibold bg-[#183153] hover:bg-[#12243d] text-white transition-colors"
             >
-              {branding.countdown?.enabled ? "Announcement" : "Check Result"}
+              {isCountdown ? "Announcement" : "Check Result"}
             </Link>
           </div>
         </div>
