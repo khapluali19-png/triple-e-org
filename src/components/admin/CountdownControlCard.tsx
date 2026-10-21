@@ -328,7 +328,7 @@ export default function CountdownControlCard({
             <span>When Countdown is OFF (Disabled)</span>
           </div>
           <ul className="space-y-1 list-disc list-inside text-[11px] leading-relaxed">
-            <li>Completely hides the countdown section from the public portal.</li>
+            <li>Countdown timer remains visible on public portal until scheduled announcement time.</li>
             <li>Enables public result searching across all 15 examination centers.</li>
             <li>Allows students to search by name and print/download certificates.</li>
             <li>Restores standard API lookups.</li>

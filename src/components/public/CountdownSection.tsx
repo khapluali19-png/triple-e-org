@@ -45,47 +45,9 @@ export default function CountdownSection({ branding = DEFAULT_BRANDING }: Countd
   const countdown = branding.countdown;
   const targetIso = countdown?.targetDate || DEFAULT_TARGET_ISO;
 
-  const [isVisible, setIsVisible] = useState(() => Boolean(branding.countdown?.enabled));
   const [timeLeft, setTimeLeft] = useState<TimeRemaining>(() => calculateTimeRemaining(targetIso));
 
-  // Sync with prop updates
   useEffect(() => {
-    setIsVisible(Boolean(branding.countdown?.enabled));
-  }, [branding.countdown?.enabled]);
-
-  // Client-side synchronization with /api/branding and custom events
-  useEffect(() => {
-    async function syncStatus() {
-      try {
-        const res = await fetch("/api/branding", {
-          cache: "no-store",
-          headers: { "Cache-Control": "no-cache" },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.branding?.countdown && typeof data.branding.countdown.enabled === "boolean") {
-            setIsVisible(data.branding.countdown.enabled);
-          } else if (typeof data.branding?.resultsPublished === "boolean") {
-            setIsVisible(!data.branding.resultsPublished);
-          }
-        }
-      } catch {
-        // non-blocking fallback
-      }
-    }
-    syncStatus();
-
-    const handleEvent = (e: any) => {
-      if (typeof e.detail === "boolean") {
-        setIsVisible(e.detail);
-      }
-    };
-    window.addEventListener("countdown-toggle", handleEvent);
-    return () => window.removeEventListener("countdown-toggle", handleEvent);
-  }, []);
-
-  useEffect(() => {
-    if (!isVisible) return;
     // Initial sync
     setTimeLeft(calculateTimeRemaining(targetIso));
 
@@ -94,10 +56,10 @@ export default function CountdownSection({ branding = DEFAULT_BRANDING }: Countd
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [targetIso, isVisible]);
+  }, [targetIso]);
 
-  // If disabled by admin, hide completely from public website
-  if (!isVisible) {
+  // Keep countdown visible on public website until scheduled announcement time
+  if (timeLeft.isComplete) {
     return null;
   }
 

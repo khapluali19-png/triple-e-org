@@ -150,15 +150,15 @@ async function runTests() {
     // Scenario 5: Verify Behavior When Countdown is OFF (Both Public & Admin)
     // -------------------------------------------------------------
     console.log("\n--- Scenario 5: Verify Behavior When Countdown is OFF (Both Public & Admin) ---");
-    // 1. Check countdown section is NOT rendered on homepage after refresh for PUBLIC USERS (NO COOKIES)
+    // 1. Check countdown section REMAINS VISIBLE on homepage until announcement time for PUBLIC USERS
     for (let refresh = 1; refresh <= 3; refresh++) {
       const homeOffRes = await fetch(`${BASE_URL}/`, {
         cache: "no-store",
       });
       const homeOffHtml = await homeOffRes.text();
-      assert(!homeOffHtml.includes("id=\"result-announcement\""), `Countdown section must be hidden when OFF for public users (refresh #${refresh})`);
+      assert(homeOffHtml.includes("id=\"result-announcement\""), `Countdown section must remain visible until announcement time when OFF for public users (refresh #${refresh})`);
     }
-    console.log("  ✔ [PASS] Countdown section is completely hidden from public website across multiple refreshes when OFF");
+    console.log("  ✔ [PASS] Countdown section remains visible on public website across multiple refreshes until scheduled time");
 
     // 2. Check /api/branding returns updated status with no-store cache headers for PUBLIC USERS (NO COOKIES)
     const brandingRes = await fetch(`${BASE_URL}/api/branding`, {
@@ -179,19 +179,19 @@ async function runTests() {
     assert(activeData.result.obtainedMarks === 94, "Marks scored matches: 94");
     console.log("  ✔ [PASS] Normal result searching is fully restored for public users without requiring admin login");
 
-    // 4. Check admin session also sees countdown hidden and search available
+    // 4. Check admin session also sees countdown visible and search available
     const adminHomeOffRes = await fetch(`${BASE_URL}/`, {
       headers: { "Cookie": sessionCookie },
       cache: "no-store",
     });
     const adminHomeOffHtml = await adminHomeOffRes.text();
-    assert(!adminHomeOffHtml.includes("id=\"result-announcement\""), "Countdown section is also hidden for admin when OFF");
+    assert(adminHomeOffHtml.includes("id=\"result-announcement\""), "Countdown section is also visible for admin when OFF");
 
     const adminSearchRes = await fetch(`${BASE_URL}/api/results?studentName=Ali+Raza&center=khaplu`, {
       headers: { "Cookie": sessionCookie },
     });
     assert(adminSearchRes.status === 200, "Result search returns HTTP 200 OK for admin when countdown is OFF");
-    console.log("  ✔ [PASS] Consistent behavior verified: countdown hidden and search open for both public users and admins");
+    console.log("  ✔ [PASS] Consistent behavior verified: countdown visible and search open for both public users and admins");
 
     // -------------------------------------------------------------
     // Scenario 6: Admin Switches Countdown back to ON (Both Public & Admin Restricted)
@@ -264,19 +264,19 @@ async function runTests() {
     const toggleOffFinalData = await toggleOffFinalRes.json();
     assert(toggleOffFinalData.countdown.enabled === false, "Countdown enabled is false");
 
-    // Verify public website hides countdown section
+    // Verify public website maintains countdown section until scheduled time
     const finalHomeRes = await fetch(`${BASE_URL}/`, {
       cache: "no-store",
     });
     const finalHomeHtml = await finalHomeRes.text();
-    assert(!finalHomeHtml.includes("id=\"result-announcement\""), "Countdown section is hidden for public users when OFF");
+    assert(finalHomeHtml.includes("id=\"result-announcement\""), "Countdown section remains visible for public users when OFF until scheduled time");
 
     // Verify search works immediately for public users
     const finalSearchRes = await fetch(`${BASE_URL}/api/results?studentName=Ali+Raza&center=khaplu`);
     assert(finalSearchRes.status === 200, "Result search is active and returns HTTP 200 OK for public users");
     const finalSearchData = await finalSearchRes.json();
     assert(finalSearchData.result.studentName === "Ali Raza", "Student found: Ali Raza");
-    console.log("  ✔ [PASS] Two-way ON/OFF cycle fully verified: Countdown hides and search restores reliably for public users");
+    console.log("  ✔ [PASS] Two-way ON/OFF cycle fully verified: Countdown stays visible and search restores reliably for public users");
 
     // -------------------------------------------------------------
     // Scenario 9: Admin Switches Countdown back to ON (Verify Lock)
@@ -323,19 +323,19 @@ async function runTests() {
     const toggleOffUserData = await toggleOffUserRes.json();
     assert(toggleOffUserData.countdown.enabled === false, "Countdown enabled is false");
 
-    // Verify public website hides countdown section
+    // Verify public website keeps countdown section until scheduled announcement time
     const userHomeRes = await fetch(`${BASE_URL}/`, {
       cache: "no-store",
     });
     const userHomeHtml = await userHomeRes.text();
-    assert(!userHomeHtml.includes("id=\"result-announcement\""), "Countdown section is hidden for public users when OFF");
+    assert(userHomeHtml.includes("id=\"result-announcement\""), "Countdown section remains visible for public users when OFF until scheduled announcement time");
 
     // Verify search works immediately for public users
     const userSearchRes = await fetch(`${BASE_URL}/api/results?studentName=Ali+Raza&center=khaplu`);
     assert(userSearchRes.status === 200, "Result search is active and returns HTTP 200 OK for public users");
     const userSearchData = await userSearchRes.json();
     assert(userSearchData.result.studentName === "Ali Raza", "Student found: Ali Raza");
-    console.log("  ✔ [PASS] Final state confirmed OFF: Countdown is hidden and public search works without login");
+    console.log("  ✔ [PASS] Final state confirmed OFF: Countdown remains visible and public search works without login");
 
     console.log("\n==================================================================");
     console.log("   🎉 ALL 9 COUNTDOWN QA SCENARIOS PASSED WITH ZERO ERRORS!      ");
