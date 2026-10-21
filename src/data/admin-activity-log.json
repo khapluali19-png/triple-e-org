@@ -1,5 +1,124 @@
 [
   {
+    "id": "72e85c62-1998-4f1a-9307-ca4927724316",
+    "timestamp": "2026-10-21T12:41:32.464Z",
+    "action": "Countdown Turned OFF",
+    "actor": "khapluali19@gmail.com",
+    "details": "Result Announcement Countdown switched to OFF. Result searching is active."
+  },
+  {
+    "id": "f2fd59e3-6dcb-4993-8384-146ab8cdc638",
+    "timestamp": "2026-10-21T12:41:32.464Z",
+    "action": "Website Branding Updated",
+    "actor": "khapluali19@gmail.com",
+    "details": "Updated competition identity, ribbons, or social links."
+  },
+  {
+    "id": "d9f2dae0-c37b-40e5-ab86-3d25658ea810",
+    "timestamp": "2026-10-21T12:41:32.416Z",
+    "action": "Countdown Turned ON",
+    "actor": "khapluali19@gmail.com",
+    "details": "Result Announcement Countdown switched to ON. Result searching is locked."
+  },
+  {
+    "id": "d43c6200-324d-44d1-ba9a-8dd2daf681c5",
+    "timestamp": "2026-10-21T12:41:32.415Z",
+    "action": "Website Branding Updated",
+    "actor": "khapluali19@gmail.com",
+    "details": "Updated competition identity, ribbons, or social links."
+  },
+  {
+    "id": "b43d9d72-b508-47c8-bdf8-b54298bf89c6",
+    "timestamp": "2026-10-21T12:41:32.346Z",
+    "action": "Countdown Turned OFF",
+    "actor": "khapluali19@gmail.com",
+    "details": "Result Announcement Countdown switched to OFF. Result searching is active."
+  },
+  {
+    "id": "8bfd633e-3148-4f2c-9f84-eac2a9cf439f",
+    "timestamp": "2026-10-21T12:41:32.345Z",
+    "action": "Website Branding Updated",
+    "actor": "khapluali19@gmail.com",
+    "details": "Updated competition identity, ribbons, or social links."
+  },
+  {
+    "id": "7af6183e-4ef1-4503-8cb4-e94dc89a9aea",
+    "timestamp": "2026-10-21T12:41:32.232Z",
+    "action": "Countdown Turned ON",
+    "actor": "khapluali19@gmail.com",
+    "details": "Result Announcement Countdown switched to ON. Result searching is locked."
+  },
+  {
+    "id": "eee1ac39-3baa-4935-88ef-c27367a0cd7e",
+    "timestamp": "2026-10-21T12:41:32.231Z",
+    "action": "Website Branding Updated",
+    "actor": "khapluali19@gmail.com",
+    "details": "Updated competition identity, ribbons, or social links."
+  },
+  {
+    "id": "bcb0b81b-3314-432f-bb84-51eb513fd451",
+    "timestamp": "2026-10-21T12:41:31.977Z",
+    "action": "Countdown Turned OFF",
+    "actor": "khapluali19@gmail.com",
+    "details": "Result Announcement Countdown switched to OFF. Result searching is active."
+  },
+  {
+    "id": "52331f28-f27d-4f39-88c4-4a193c0f071d",
+    "timestamp": "2026-10-21T12:41:31.976Z",
+    "action": "Website Branding Updated",
+    "actor": "khapluali19@gmail.com",
+    "details": "Updated competition identity, ribbons, or social links."
+  },
+  {
+    "id": "e8692bcd-3ae7-4f1c-9c59-513521d361e1",
+    "timestamp": "2026-10-21T12:41:31.945Z",
+    "action": "Admin Sign In",
+    "actor": "khapluali19@gmail.com",
+    "details": "Successful login from IP: ::1"
+  },
+  {
+    "id": "4d877784-67a9-4459-845b-9f2de77ffbc1",
+    "timestamp": "2026-10-21T12:41:21.645Z",
+    "action": "Password Changed",
+    "actor": "khapluali19@gmail.com",
+    "details": "Administrator password was updated successfully."
+  },
+  {
+    "id": "05576f98-0201-483e-a4d9-ce933f531804",
+    "timestamp": "2026-10-21T12:41:20.911Z",
+    "action": "Admin Sign In",
+    "actor": "khapluali19@gmail.com",
+    "details": "Successful login from IP: ::1"
+  },
+  {
+    "id": "1d6e2a80-89a3-45f5-bf43-3ed77bd606a7",
+    "timestamp": "2026-10-21T12:41:20.485Z",
+    "action": "Failed Login Attempt",
+    "actor": "abx@triple-e-.com",
+    "details": "Unsuccessful authentication from IP: ::1"
+  },
+  {
+    "id": "ce2e3f1d-1690-4c07-879b-64b54beb99e8",
+    "timestamp": "2026-10-21T12:41:20.123Z",
+    "action": "Password Changed",
+    "actor": "khapluali19@gmail.com",
+    "details": "Administrator password was updated successfully."
+  },
+  {
+    "id": "1b790ad6-17e1-451a-b772-291ff22f3edc",
+    "timestamp": "2026-10-21T12:41:18.981Z",
+    "action": "Admin Sign In",
+    "actor": "khapluali19@gmail.com",
+    "details": "Successful login from IP: ::1"
+  },
+  {
+    "id": "aba65df1-86a2-4005-b152-14ac8fbd109d",
+    "timestamp": "2026-10-21T12:41:18.596Z",
+    "action": "Admin Sign In",
+    "actor": "khapluali19@gmail.com",
+    "details": "Successful login from IP: ::1"
+  },
+  {
     "id": "e4a9735c-4a69-40a4-9051-e56682568907",
     "timestamp": "2026-10-21T11:16:03.046Z",
     "action": "Countdown Turned OFF",
@@ -229,124 +348,5 @@
     "action": "Admin Sign In",
     "actor": "khapluali19@gmail.com",
     "details": "Successful login from IP: 10.0.0.1"
-  },
-  {
-    "id": "9b34aeed-776a-4089-819a-96133d3ba495",
-    "timestamp": "2026-10-20T09:06:51.123Z",
-    "action": "Admin Sign In",
-    "actor": "khapluali19@gmail.com",
-    "details": "Successful login from IP: ::1"
-  },
-  {
-    "id": "6bb48939-de05-4533-b1b7-1bc1ddc5d27c",
-    "timestamp": "2026-10-20T09:06:51.025Z",
-    "action": "Failed Login Attempt",
-    "actor": "khapluali19@gmail.com",
-    "details": "Unsuccessful authentication from IP: ::1"
-  },
-  {
-    "id": "1e30ce7b-8d05-460c-8adf-e05d1f443ab3",
-    "timestamp": "2026-10-20T08:08:46.879Z",
-    "action": "Admin Sign In",
-    "actor": "khapluali19@gmail.com",
-    "details": "Successful login from IP: ::1"
-  },
-  {
-    "id": "2eaa7a62-671e-4e20-b65f-9f38824780cc",
-    "timestamp": "2026-10-20T08:08:46.394Z",
-    "action": "Failed Login Attempt",
-    "actor": "khapluali19@gmail.com",
-    "details": "Unsuccessful authentication from IP: ::1"
-  },
-  {
-    "id": "efac496c-c4b9-4ab9-9eff-73005db0b3b3",
-    "timestamp": "2026-10-20T08:05:45.098Z",
-    "action": "Failed Login Attempt",
-    "actor": "khapluali19@gmail.com",
-    "details": "Unsuccessful authentication from IP: 10.0.0.99"
-  },
-  {
-    "id": "5b1503ff-d91e-41d4-b997-47c496e07b32",
-    "timestamp": "2026-10-20T08:05:44.620Z",
-    "action": "Admin Sign In",
-    "actor": "khapluali19@gmail.com",
-    "details": "Successful login from IP: 10.0.0.99"
-  },
-  {
-    "id": "45e0c271-1f36-4af1-9a79-e008e8d9207f",
-    "timestamp": "2026-10-20T08:05:43.844Z",
-    "action": "Failed Login Attempt",
-    "actor": "khapluali19@gmail.com",
-    "details": "Unsuccessful authentication from IP: 192.168.1.100"
-  },
-  {
-    "id": "3f1a4a47-1521-4588-b88d-1855af819c77",
-    "timestamp": "2026-10-20T08:05:43.469Z",
-    "action": "Failed Login Attempt",
-    "actor": "khapluali19@gmail.com",
-    "details": "Unsuccessful authentication from IP: 192.168.1.100"
-  },
-  {
-    "id": "bbdce5e0-9732-4ff2-918e-3b967b96b284",
-    "timestamp": "2026-10-20T08:05:43.050Z",
-    "action": "Failed Login Attempt",
-    "actor": "khapluali19@gmail.com",
-    "details": "Unsuccessful authentication from IP: 192.168.1.100"
-  },
-  {
-    "id": "d458c771-09cb-483c-b09a-f23a11905976",
-    "timestamp": "2026-10-20T08:05:42.568Z",
-    "action": "Failed Login Attempt",
-    "actor": "khapluali19@gmail.com",
-    "details": "Unsuccessful authentication from IP: 192.168.1.100"
-  },
-  {
-    "id": "91f7c11f-d630-489f-8da2-6da5578a16b7",
-    "timestamp": "2026-10-20T08:05:41.958Z",
-    "action": "Failed Login Attempt",
-    "actor": "khapluali19@gmail.com",
-    "details": "Unsuccessful authentication from IP: 192.168.1.100"
-  },
-  {
-    "id": "508ff23f-e2d6-4e77-8173-ea69f539d40f",
-    "timestamp": "2026-10-20T08:05:41.439Z",
-    "action": "Admin Sign Out",
-    "actor": "khapluali19@gmail.com",
-    "details": "Administrator session ended."
-  },
-  {
-    "id": "c78709fa-62e8-4820-b839-51dafa868274",
-    "timestamp": "2026-10-20T08:05:41.433Z",
-    "action": "Failed Login Attempt",
-    "actor": "khapluali19@gmail.com",
-    "details": "Unsuccessful authentication from IP: 10.0.0.2"
-  },
-  {
-    "id": "a9aeed52-ad2b-4766-8ac7-4df3be7122fa",
-    "timestamp": "2026-10-20T08:05:40.629Z",
-    "action": "Admin Sign In",
-    "actor": "khapluali19@gmail.com",
-    "details": "Successful login from IP: 10.0.0.1"
-  },
-  {
-    "id": "313625d6-a89c-43d4-a50f-3ff4d1e17321",
-    "timestamp": "2026-10-20T08:05:40.616Z",
-    "action": "Admin Sign In",
-    "actor": "khapluali19@gmail.com",
-    "details": "Successful login from IP: 10.0.0.1"
-  },
-  {
-    "id": "f69cae5e-ffb1-4130-9904-2af6f8997ec8",
-    "timestamp": "2026-10-20T06:49:47.180Z",
-    "action": "Admin Sign In",
-    "actor": "khapluali19@gmail.com",
-    "details": "Successful login from IP: ::1"
-  },
-  {
-    "id": "e9e1789e-7690-4d34-8a7f-76517c9bfe31",
-    "timestamp": "2026-10-20T06:49:46.400Z",
-    "action": "Failed Login Attempt",
-    "actor": "khapluali19@gmail.com",
-    "details": "Unsuccessful authentication from IP: ::1"
   }
 ]

@@ -13,14 +13,16 @@ import {
   Eye, 
   LogOut,
   ShieldCheck,
-  ChevronRight
+  ChevronRight,
+  KeyRound
 } from "lucide-react";
 
 interface AdminSidebarProps {
   onCloseMobile?: () => void;
+  onOpenChangePassword?: () => void;
 }
 
-export default function AdminSidebar({ onCloseMobile }: AdminSidebarProps) {
+export default function AdminSidebar({ onCloseMobile, onOpenChangePassword }: AdminSidebarProps) {
   const pathname = usePathname();
 
   const navigation = [
@@ -83,6 +85,25 @@ export default function AdminSidebar({ onCloseMobile }: AdminSidebarProps) {
             </Link>
           );
         })}
+
+        {onOpenChangePassword && (
+          <div className="pt-2 border-t border-navy-900 mt-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (onCloseMobile) onCloseMobile();
+                onOpenChangePassword();
+              }}
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold text-slate-300 hover:bg-navy-900 hover:text-white transition-all text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <KeyRound className="w-4 h-4 text-gold-400" />
+                <span>Change Password</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+            </button>
+          </div>
+        )}
       </nav>
 
       {/* Footer / Exit */}

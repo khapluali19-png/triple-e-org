@@ -8,14 +8,15 @@ import { Lock, Mail, ShieldAlert, ArrowRight, Loader2, ArrowLeft, KeyRound } fro
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState("abx@triple-e-.com");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
+    const effectiveEmail = email.trim() || "abx@triple-e-.com";
+    if (!effectiveEmail || !password) {
       setError("Please provide both administrator email and access password.");
       return;
     }
@@ -27,7 +28,7 @@ export default function AdminLoginPage() {
       const res = await fetch("/api/admin/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: effectiveEmail, password }),
       });
 
       const data = await res.json();
@@ -109,7 +110,7 @@ export default function AdminLoginPage() {
                   onClick={handlePrefillEmail}
                   className="text-[11px] text-blue-700 hover:underline font-semibold"
                 >
-                  Use Official Email
+                  Use Saved Email
                 </button>
               </div>
               <div className="relative rounded-md shadow-2xs">
@@ -121,10 +122,9 @@ export default function AdminLoginPage() {
                   name="email"
                   type="email"
                   autoComplete="email"
-                  required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="khapluali19@gmail.com"
+                  placeholder="abx@triple-e-.com"
                   className="block w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-navy-900 focus:border-navy-900 text-xs sm:text-sm text-navy-950"
                 />
               </div>

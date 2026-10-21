@@ -14,11 +14,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { currentPassword, newPassword } = body || {};
+    const { currentPassword, newPassword, confirmPassword } = body || {};
 
     if (!currentPassword || !newPassword) {
       return NextResponse.json(
         { success: false, message: "Current password and new password are required." },
+        { status: 400 }
+      );
+    }
+
+    if (confirmPassword !== undefined && confirmPassword !== newPassword) {
+      return NextResponse.json(
+        { success: false, message: "New password and confirmation do not match." },
         { status: 400 }
       );
     }
@@ -36,8 +43,6 @@ export async function POST(request: NextRequest) {
       success: true,
       persisted: result.persisted ?? true,
       message: result.message,
-      passwordHash: result.passwordHash,
-      persistenceWarning: result.persistenceWarning,
     });
 
     // Refresh the cookie session

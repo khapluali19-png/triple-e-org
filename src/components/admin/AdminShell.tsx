@@ -98,7 +98,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     <div className="flex h-screen bg-slate-100 overflow-hidden text-slate-900">
       {/* Desktop Sidebar */}
       <div className="hidden md:flex flex-col">
-        <AdminSidebar />
+        <AdminSidebar onOpenChangePassword={() => setChangePasswordModalOpen(true)} />
       </div>
 
       {/* Mobile Sidebar Overlay */}
@@ -109,7 +109,10 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             onClick={() => setMobileSidebarOpen(false)}
           />
           <div className="relative z-10">
-            <AdminSidebar onCloseMobile={() => setMobileSidebarOpen(false)} />
+            <AdminSidebar 
+              onCloseMobile={() => setMobileSidebarOpen(false)} 
+              onOpenChangePassword={() => setChangePasswordModalOpen(true)} 
+            />
           </div>
         </div>
       )}

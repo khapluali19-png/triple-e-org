@@ -64,12 +64,14 @@ export default function AdminHeader({
         {/* Change Password Button */}
         {onOpenChangePassword && (
           <button
+            type="button"
             onClick={onOpenChangePassword}
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-medium transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
             title="Change administrator password"
           >
-            <KeyRound className="w-3.5 h-3.5 text-slate-500" />
-            <span>Password</span>
+            <KeyRound className="w-3.5 h-3.5 text-gold-500" />
+            <span className="hidden xs:inline sm:inline">Change Password</span>
+            <span className="xs:hidden sm:hidden">Password</span>
           </button>
         )}
 

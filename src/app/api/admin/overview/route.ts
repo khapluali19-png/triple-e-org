@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     success: true,
     overview: {
+      adminEmail: auth.email || "khapluali19@gmail.com",
       connectedCategoriesCount: connectedCount,
       totalCategoriesCount: categories.length,
       categoryHealth,

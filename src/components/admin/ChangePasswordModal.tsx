@@ -21,12 +21,14 @@ export default function ChangePasswordModal({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccessMessage(null);
 
     if (!currentPassword || !newPassword || !confirmPassword) {
       setError("Please fill in all password fields.");
@@ -54,12 +56,18 @@ export default function ChangePasswordModal({
       const res = await fetch("/api/admin/auth/change-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentPassword, newPassword }),
+        body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
       });
 
       const data = await res.json();
       if (res.ok && data.success) {
-        onSuccess();
+        setSuccessMessage(data.message || "Password updated and saved successfully!");
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+        setTimeout(() => {
+          onSuccess();
+        }, 1500);
       } else {
         setError(data.message || "Failed to update password.");
       }
@@ -74,22 +82,32 @@ export default function ChangePasswordModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white rounded-2xl shadow-elevated border border-slate-200 max-w-md w-full overflow-hidden text-left">
         {/* Modal Top Banner */}
-        <div className="bg-navy-950 p-6 text-white border-b border-navy-800">
+        <div className="bg-navy-950 p-6 text-white border-b border-navy-800 flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gold-500/20 border border-gold-500/40 flex items-center justify-center text-gold-400 shrink-0">
               <KeyRound className="w-5 h-5" />
             </div>
             <div>
               <h3 className="font-serif text-lg font-bold text-white">
-                {isMandatory ? "Password Change Required" : "Update Admin Password"}
+                {isMandatory ? "Password Change Required" : "Change Password"}
               </h3>
               <p className="text-xs text-slate-300">
                 {isMandatory
                   ? "Security protocol: You must change the initial password before administering the portal."
-                  : "Protect your administrator account with a strong password."}
+                  : "Protect your administrator account with a strong, private password."}
               </p>
             </div>
           </div>
+          {!isMandatory && onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-navy-900 transition-colors"
+              aria-label="Close"
+            >
+              ✕
+            </button>
+          )}
         </div>
 
         {/* Form Body */}
@@ -100,6 +118,13 @@ export default function ChangePasswordModal({
               <span>
                 Initial bootstrap password detected. For production safety, set your unique private password.
               </span>
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex items-start gap-2.5 animate-in fade-in">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+              <span className="font-medium">{successMessage}</span>
             </div>
           )}
 

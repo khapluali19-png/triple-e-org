@@ -1,7 +1,7 @@
 {
   "email": "khapluali19@gmail.com",
-  "passwordHash": "$2b$12$dGft.i6/8wpwoyNEi0E4LuSPGJlEnAKbVaRrfd587jyM42RJd3aHK",
-  "mustChangePassword": true,
+  "passwordHash": "$2b$12$txNVoCpWf4YZF43RDsAsAOboUZ6WNAE25TGe3q.0IxhQRopDpPRAm",
+  "mustChangePassword": false,
   "lastLoginAt": null,
-  "passwordChangedAt": null
+  "passwordChangedAt": "2026-10-21T12:41:21.644Z"
 }

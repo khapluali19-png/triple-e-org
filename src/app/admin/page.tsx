@@ -18,9 +18,11 @@ import {
   History, 
   Share2,
   AlertCircle,
-  HelpCircle
+  HelpCircle,
+  KeyRound
 } from "lucide-react";
 import CountdownControlCard from "@/components/admin/CountdownControlCard";
+import ChangePasswordModal from "@/components/admin/ChangePasswordModal";
 import { CountdownConfig } from "@/lib/types";
 
 interface CategoryHealthItem {
@@ -38,6 +40,7 @@ interface CategoryHealthItem {
 }
 
 interface OverviewData {
+  adminEmail?: string;
   connectedCategoriesCount: number;
   totalCategoriesCount: number;
   categoryHealth: CategoryHealthItem[];
@@ -62,6 +65,7 @@ interface OverviewData {
 export default function AdminDashboardPage() {
   const [data, setData] = useState<OverviewData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
 
   const fetchOverview = async () => {
     try {
@@ -133,6 +137,75 @@ export default function AdminDashboardPage() {
           } : prev);
         }}
       />
+
+      {/* Administrator Account & Access Credentials Management Card */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-6 sm:p-7 space-y-5 text-left">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-navy-950 flex items-center justify-center text-gold-400 shadow-xs shrink-0">
+              <KeyRound className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-serif text-base sm:text-lg font-bold text-navy-950">
+                Administrator Account &amp; Access Credentials
+              </h3>
+              <p className="text-xs text-slate-500">
+                Official management email identity, bcrypt security hashing, and password management.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setChangePasswordModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-navy-950 hover:bg-navy-900 text-white text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer"
+          >
+            <KeyRound className="w-3.5 h-3.5 text-gold-400" />
+            <span>Change Password</span>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* Email Information & Default Field Display */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+              Administrator Email
+            </label>
+            <input
+              type="email"
+              defaultValue={data?.adminEmail || "abx@triple-e-.com"}
+              placeholder="abx@triple-e-.com"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-navy-900 focus:border-navy-900 text-xs sm:text-sm text-navy-950"
+            />
+            <p className="text-[11px] text-slate-500">
+              Default identifier: <span className="font-mono text-navy-900 font-semibold">abx@triple-e-.com</span>. Saved email is preserved and not overwritten automatically.
+            </p>
+          </div>
+
+          {/* Password Security Status */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+              Password Security Status
+            </label>
+            <div className="flex items-center justify-between px-3.5 py-2.5 rounded-lg border border-emerald-200 bg-emerald-50/60 text-xs text-emerald-950">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                <span className="font-medium">Encrypted via Bcrypt (Cost 12)</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setChangePasswordModalOpen(true)}
+                className="text-[11px] text-emerald-800 font-bold hover:underline cursor-pointer"
+              >
+                Change Password
+              </button>
+            </div>
+            <p className="text-[11px] text-slate-500">
+              Never shared in plain text. Click &quot;Change Password&quot; to securely update credentials.
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* Metrics Row: Real Verified Connection Counts */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -421,6 +494,16 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={changePasswordModalOpen}
+        onClose={() => setChangePasswordModalOpen(false)}
+        onSuccess={() => {
+          setChangePasswordModalOpen(false);
+          fetchOverview();
+        }}
+      />
     </div>
   );
 }
