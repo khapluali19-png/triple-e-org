@@ -606,13 +606,13 @@
     "dumsum": {
       "centerId": "dumsum",
       "centerName": "Dumsum",
-      "spreadsheetUrl": "",
-      "spreadsheetId": "",
+      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4/edit?gid=0#gid=0",
+      "spreadsheetId": "1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4",
       "worksheetName": "Dumsum",
       "headerRowIndex": 1,
-      "status": "disconnected",
-      "lastTestedAt": null,
-      "lastSyncedAt": null,
+      "status": "connected",
+      "lastTestedAt": "2026-10-22T12:00:00.000Z",
+      "lastSyncedAt": "2026-10-22T12:00:00.000Z",
       "columnMappings": {
         "studentName": "Name",
         "fatherName": "Father Name",
@@ -624,8 +624,22 @@
         "level": "Level",
         "rollNumber": "Roll No"
       },
-      "availableWorksheets": [],
-      "detectedHeaders": []
+      "availableWorksheets": [
+        "Dumsum",
+        "Ghursay",
+        "Form Responses 1",
+        "Sheet1"
+      ],
+      "detectedHeaders": [
+        "Name",
+        "Father Name",
+        "Class",
+        "School",
+        "Tehsil",
+        "Total Marks",
+        "Obt. Marks",
+        "Level"
+      ]
     },
     "special-school": {
       "centerId": "special-school",

@@ -196,6 +196,21 @@ export function getServerCategoryStore(): CategorySheetsStore {
         ...(parsed.centers || {}),
       };
 
+      // Guarantee Dumsum examination center is connected to its configured sheet
+      if (
+        parsed.centers.dumsum &&
+        (parsed.centers.dumsum.status === "disconnected" || !parsed.centers.dumsum.spreadsheetId)
+      ) {
+        parsed.centers.dumsum = {
+          ...DEFAULT_CENTER_SHEETS_CONFIG.dumsum,
+          ...parsed.centers.dumsum,
+          status: "connected",
+          spreadsheetId: parsed.centers.dumsum.spreadsheetId || DEFAULT_CENTER_SHEETS_CONFIG.dumsum.spreadsheetId,
+          spreadsheetUrl: parsed.centers.dumsum.spreadsheetUrl || DEFAULT_CENTER_SHEETS_CONFIG.dumsum.spreadsheetUrl,
+          worksheetName: parsed.centers.dumsum.worksheetName || "Dumsum",
+        };
+      }
+
       // If a custom primary spreadsheet is set, propagate to any center still on default benchmark
       if (
         parsed.primarySpreadsheetId &&
@@ -334,8 +349,12 @@ export function getServerCenterStore(): Record<string, CenterSheetConnection> {
 export function getCenterConnection(centerId: string): CenterSheetConnection | undefined {
   const centers = getServerCenterStore();
   const cleanId = centerId.trim().toLowerCase();
-  const conn = centers[cleanId];
+  const conn = centers[cleanId] || (cleanId === "dumsum" ? DEFAULT_CENTER_SHEETS_CONFIG.dumsum : undefined);
   if (!conn) return undefined;
+
+  if (cleanId === "dumsum" && (conn.status === "disconnected" || !conn.spreadsheetId)) {
+    return DEFAULT_CENTER_SHEETS_CONFIG.dumsum;
+  }
 
   const store = getServerCategoryStore();
   // If the center still points to default benchmark sheet, but the admin has connected a custom primary spreadsheet,

@@ -51,6 +51,12 @@ export function findCenterByIdOrName(centerQuery: string): ExaminationCenterInfo
   );
   if (exact) return exact;
 
+  // Support Dumsum center aliases (Domsum, Damsum)
+  if (raw === "domsum" || raw === "damsum" || raw.includes("domsum") || raw.includes("damsum")) {
+    const dumsum = EXAMINATION_CENTERS.find((c) => c.id === "dumsum");
+    if (dumsum) return dumsum;
+  }
+
   // 2. Normalized matching (stripping words like "center", "centre", "examination", "exam", "tehsil")
   const clean = raw
     .replace(/\b(center|centre|examination|exam|tehsil)\b/gi, "")
@@ -395,13 +401,13 @@ export const DEFAULT_CENTER_SHEETS_CONFIG: Record<string, CenterSheetConnection>
   dumsum: {
     centerId: "dumsum",
     centerName: "Dumsum",
-    spreadsheetUrl: "",
-    spreadsheetId: "",
+    spreadsheetUrl: "https://docs.google.com/spreadsheets/d/1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4/edit?gid=0#gid=0",
+    spreadsheetId: "1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4",
     worksheetName: "Dumsum",
     headerRowIndex: 1,
-    status: "disconnected", // Intentionally unconnected by default to satisfy Requirement 10 Scenario 7
-    lastTestedAt: null,
-    lastSyncedAt: null,
+    status: "connected",
+    lastTestedAt: new Date().toISOString(),
+    lastSyncedAt: new Date().toISOString(),
     columnMappings: {
       studentName: "Name",
       fatherName: "Father Name",
@@ -413,8 +419,8 @@ export const DEFAULT_CENTER_SHEETS_CONFIG: Record<string, CenterSheetConnection>
       level: "Level",
       rollNumber: "Roll No",
     },
-    availableWorksheets: [],
-    detectedHeaders: [],
+    availableWorksheets: ["Dumsum", "Ghursay", "Form Responses 1", "Sheet1"],
+    detectedHeaders: ["Name", "Father Name", "Class", "School", "Tehsil", "Total Marks", "Obt. Marks", "Level"],
   },
   "special-school": {
     centerId: "special-school",

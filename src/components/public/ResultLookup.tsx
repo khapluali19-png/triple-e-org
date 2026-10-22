@@ -260,7 +260,7 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
                       <option value="">-- Select Examination Center (15 Centers) --</option>
                       {EXAMINATION_CENTERS.map((center) => (
                         <option key={center.id} value={center.id}>
-                          {center.name} {center.id === "dumsum" ? "(Unconnected Ledger)" : ""}
+                          {center.name}
                         </option>
                       ))}
                     </select>
@@ -485,14 +485,14 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
                 <button
                   type="button"
                   disabled={isCountdownActive}
-                  onClick={() => handleQuickTest("Student", "dumsum")}
-                  className={`px-2.5 py-1 rounded-md text-xs border transition-colors ${
+                  onClick={() => handleQuickTest("Sairaa", "dumsum")}
+                  className={`px-2.5 py-1 rounded-md text-xs border border-[#E6E9EE] transition-colors ${
                     isCountdownActive 
-                      ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed" 
-                      : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300 cursor-pointer"
+                      ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
+                      : "bg-[#F7F8FA] hover:bg-slate-200 text-[#20252B] cursor-pointer"
                   }`}
                 >
-                  Dumsum (Unconnected Center Test)
+                  Sairaa (Dumsum)
                 </button>
               </div>
             </div>

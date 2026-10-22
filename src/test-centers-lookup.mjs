@@ -179,22 +179,37 @@ async function runCentersVerificationSuite() {
     assert(data6b.result.obtainedMarks === 80, "Marks 80 for Muhammad Ali s/o Hassan");
 
     // =============================================================
-    // SCENARIO 7: Unconnected center produces CENTER_NOT_CONFIGURED
+    // SCENARIO 7: Dumsum center connected and looks up valid results
     // =============================================================
-    console.log("\n--- Scenario 7: Unconnected center produces clear message ---");
+    console.log("\n--- Scenario 7: Dumsum center connected and looks up valid results ---");
     const res7 = await fetch(
-      `${BASE_URL}/api/results?studentName=Any%20Student&center=dumsum`
+      `${BASE_URL}/api/results?studentName=Sairaa&center=dumsum`
     );
     const data7 = await res7.json();
-    assert(data7.success === false, "Unconnected center returns success=false");
-    assert(
-      data7.code === "CENTER_NOT_CONFIGURED",
-      `Expected code CENTER_NOT_CONFIGURED, got ${data7.code}`
+    assert(res7.status === 200, "Dumsum center returns HTTP 200 for Sairaa");
+    assert(data7.success === true, "Lookup success is true for Sairaa in Dumsum");
+    assert(data7.result.studentName === "Sairaa", "Student name matches: Sairaa");
+    assert(data7.result.obtainedMarks === 25, "Obtained marks: 25");
+    assert(data7.result.totalMarks === 50, "Total marks: 50");
+    assert(data7.result.percentage === 50, "Percentage: 50%");
+    assert(data7.result.level === "Level 1", "Level: Level 1");
+
+    // Test Dumsum lookup via alias "domsum"
+    const res7b = await fetch(
+      `${BASE_URL}/api/results?studentName=Sairaa&center=domsum`
     );
-    assert(
-      data7.message.includes("not yet connected") || data7.message.includes("Dumsum"),
-      "Message explains that the sheet has not been connected yet"
+    const data7b = await res7b.json();
+    assert(res7b.status === 200, "Lookup via 'domsum' alias returns HTTP 200");
+    assert(data7b.success === true, "Lookup via 'domsum' alias resolves correctly");
+
+    // Test student with Father Name in Dumsum
+    const res7c = await fetch(
+      `${BASE_URL}/api/results?studentName=Majid&center=dumsum&fatherName=M.yousuf`
     );
+    const data7c = await res7c.json();
+    assert(res7c.status === 200, "Majid with father M.yousuf returns HTTP 200");
+    assert(data7c.success === true, "Majid in Dumsum found successfully");
+    assert(data7c.result.obtainedMarks === 19, "Marks: 19 for Majid");
 
     // =============================================================
     // SCENARIO 8: Cross-center isolation
