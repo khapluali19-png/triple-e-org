@@ -12,9 +12,11 @@ import {
   MapPin,
   HelpCircle,
   CheckCircle2,
-  Layers
+  Layers,
+  GraduationCap,
+  Users
 } from "lucide-react";
-import { StudentResult, WebsiteBrandingConfig } from "@/lib/types";
+import { StudentResult, WebsiteBrandingConfig, CandidateMatch } from "@/lib/types";
 import { DEFAULT_BRANDING, EXAMINATION_CENTERS } from "@/lib/constants";
 import { lookupStudentResult } from "@/lib/dataService";
 import ResultCard from "./ResultCard";
@@ -29,6 +31,7 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
   const [studentName, setStudentName] = useState("");
   const [examinationCenter, setExaminationCenter] = useState("ghursay");
   const [level, setLevel] = useState("");
+  const [classOrSection, setClassOrSection] = useState("");
   const [fatherName, setFatherName] = useState("");
   const [schoolName, setSchoolName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -38,6 +41,7 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
     duplicate?: boolean; 
     ambiguity?: boolean;
   } | null>(null);
+  const [candidates, setCandidates] = useState<CandidateMatch[] | null>(null);
   const [result, setResult] = useState<StudentResult | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -117,18 +121,21 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
     setLoading(true);
     setError(null);
     setResult(null);
+    setCandidates(null);
 
     try {
       const response = await lookupStudentResult({
         studentName: cleanName,
         examinationCenter,
         level: level.trim(),
+        classOrSection: classOrSection.trim() || undefined,
         fatherName: fatherName.trim() || undefined,
         schoolName: schoolName.trim() || undefined,
       });
 
       if (response.success && response.result) {
         setResult(response.result);
+        setCandidates(null);
 
         // Fire celebratory confetti if high distinction or top 3 rank
         if (
@@ -147,6 +154,9 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
           }
         }
       } else {
+        if (response.candidates && response.candidates.length > 0) {
+          setCandidates(response.candidates);
+        }
         setError({
           code: response.code || "NOT_FOUND",
           message: response.message || `No result record found for student "${cleanName}".`,
@@ -164,7 +174,7 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
     }
   };
 
-  const handleQuickTest = (name: string, center: string, lvl?: string, father?: string, school?: string) => {
+  const handleQuickTest = (name: string, center: string, lvl?: string, father?: string, school?: string, cls?: string) => {
     if (isCountdownActive) {
       setError({
         code: "RESULTS_PENDING",
@@ -177,10 +187,12 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
     setStudentName(name);
     setExaminationCenter(center);
     setLevel(cleanLvl);
+    setClassOrSection(cls || "");
     setFatherName(father || "");
     setSchoolName(school || "");
     setError(null);
     setResult(null);
+    setCandidates(null);
     setLoading(true);
 
     setTimeout(() => {
@@ -188,13 +200,18 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
         studentName: name,
         examinationCenter: center,
         level: cleanLvl,
+        classOrSection: cls || undefined,
         fatherName: father || undefined,
         schoolName: school || undefined,
       })
         .then((res) => {
           if (res.success && res.result) {
             setResult(res.result);
+            setCandidates(null);
           } else {
+            if (res.candidates && res.candidates.length > 0) {
+              setCandidates(res.candidates);
+            }
             setError({
               code: res.code || "NOT_FOUND",
               message: res.message || "Record not found",
@@ -353,61 +370,104 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
                 </div>
               </div>
 
-              {/* Row 2: Father's Name (Optional) & School Name (Optional) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
-                {/* Father's Name */}
-                <div className="space-y-1.5">
-                  <label 
-                    htmlFor="fatherName" 
-                    className="block text-xs font-bold uppercase tracking-wider text-[#20252B] flex items-center justify-between"
-                  >
-                    <span>Father&apos;s Name</span>
-                    <span className="text-[10px] font-normal lowercase text-slate-400">(optional verification)</span>
-                  </label>
-                  <input
-                    id="fatherName"
-                    type="text"
-                    disabled={loading || isCountdownActive}
-                    value={fatherName}
-                    onChange={(e) => {
-                      setFatherName(e.target.value);
-                      if (error) setError(null);
-                    }}
-                    placeholder="e.g. Muhammad Hussain"
-                    className="w-full px-4 py-2.5 rounded-lg border border-[#E6E9EE] text-xs sm:text-sm text-[#20252B] disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed placeholder:text-slate-400 focus:outline-none focus:border-[#183153] focus:ring-1 focus:ring-[#183153] transition-all"
-                  />
-                  <p className="text-[11px] text-[#737B85]">
-                    Used to identify candidates if duplicate names exist.
-                  </p>
+              {/* Row 2: Optional Filters (Class, Father's Name, School Name) */}
+              <div className="space-y-2 pt-2 border-t border-[#E6E9EE]/60">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    Optional Verification Filters
+                  </span>
+                  <span className="text-[10px] text-slate-400">
+                    Helps resolve duplicate names or missing father records
+                  </span>
                 </div>
 
-                {/* School Name */}
-                <div className="space-y-1.5">
-                  <label 
-                    htmlFor="schoolName" 
-                    className="block text-xs font-bold uppercase tracking-wider text-[#20252B] flex items-center justify-between"
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <School className="w-3.5 h-3.5 text-[#183153]" />
-                      <span>School Name</span>
-                    </span>
-                    <span className="text-[10px] font-normal lowercase text-slate-400">(optional verification)</span>
-                  </label>
-                  <input
-                    id="schoolName"
-                    type="text"
-                    disabled={loading || isCountdownActive}
-                    value={schoolName}
-                    onChange={(e) => {
-                      setSchoolName(e.target.value);
-                      if (error) setError(null);
-                    }}
-                    placeholder="e.g. Govt High School Khaplu"
-                    className="w-full px-4 py-2.5 rounded-lg border border-[#E6E9EE] text-xs sm:text-sm text-[#20252B] disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed placeholder:text-slate-400 focus:outline-none focus:border-[#183153] focus:ring-1 focus:ring-[#183153] transition-all"
-                  />
-                  <p className="text-[11px] text-[#737B85]">
-                    Additional verification identifier.
-                  </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Class (Optional) */}
+                  <div className="space-y-1.5">
+                    <label 
+                      htmlFor="classOrSection" 
+                      className="block text-xs font-bold uppercase tracking-wider text-[#20252B] flex items-center justify-between"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <GraduationCap className="w-3.5 h-3.5 text-[#183153]" />
+                        <span>Class</span>
+                      </span>
+                      <span className="text-[10px] font-normal lowercase text-slate-400">(optional)</span>
+                    </label>
+                    <input
+                      id="classOrSection"
+                      type="text"
+                      disabled={loading || isCountdownActive}
+                      value={classOrSection}
+                      onChange={(e) => {
+                        setClassOrSection(e.target.value);
+                        if (error) setError(null);
+                      }}
+                      placeholder="e.g. 5, 8th, 10..."
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-[#E6E9EE] text-xs sm:text-sm text-[#20252B] disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed placeholder:text-slate-400 focus:outline-none focus:border-[#183153] focus:ring-1 focus:ring-[#183153] transition-all"
+                    />
+                    <p className="text-[11px] text-[#737B85]">
+                      Class or grade filter.
+                    </p>
+                  </div>
+
+                  {/* Father's Name (Optional) */}
+                  <div className="space-y-1.5">
+                    <label 
+                      htmlFor="fatherName" 
+                      className="block text-xs font-bold uppercase tracking-wider text-[#20252B] flex items-center justify-between"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-[#183153]" />
+                        <span>Father&apos;s Name</span>
+                      </span>
+                      <span className="text-[10px] font-normal lowercase text-slate-400">(optional)</span>
+                    </label>
+                    <input
+                      id="fatherName"
+                      type="text"
+                      disabled={loading || isCountdownActive}
+                      value={fatherName}
+                      onChange={(e) => {
+                        setFatherName(e.target.value);
+                        if (error) setError(null);
+                      }}
+                      placeholder="e.g. Muhammad Hussain"
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-[#E6E9EE] text-xs sm:text-sm text-[#20252B] disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed placeholder:text-slate-400 focus:outline-none focus:border-[#183153] focus:ring-1 focus:ring-[#183153] transition-all"
+                    />
+                    <p className="text-[11px] text-[#737B85]">
+                      Father name verification.
+                    </p>
+                  </div>
+
+                  {/* School Name (Optional) */}
+                  <div className="space-y-1.5">
+                    <label 
+                      htmlFor="schoolName" 
+                      className="block text-xs font-bold uppercase tracking-wider text-[#20252B] flex items-center justify-between"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <School className="w-3.5 h-3.5 text-[#183153]" />
+                        <span>School Name</span>
+                      </span>
+                      <span className="text-[10px] font-normal lowercase text-slate-400">(optional)</span>
+                    </label>
+                    <input
+                      id="schoolName"
+                      type="text"
+                      disabled={loading || isCountdownActive}
+                      value={schoolName}
+                      onChange={(e) => {
+                        setSchoolName(e.target.value);
+                        if (error) setError(null);
+                      }}
+                      placeholder="e.g. Khaplu Public School"
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-[#E6E9EE] text-xs sm:text-sm text-[#20252B] disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed placeholder:text-slate-400 focus:outline-none focus:border-[#183153] focus:ring-1 focus:ring-[#183153] transition-all"
+                    />
+                    <p className="text-[11px] text-[#737B85]">
+                      Flexible school matching.
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -562,8 +622,107 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
           </div>
         </div>
 
+        {/* Candidate Disambiguation / Multi-Match Selection */}
+        {candidates && candidates.length > 0 && !result && (
+          <div className="max-w-3xl mx-auto rounded-2xl p-6 sm:p-7 border-2 border-amber-300 bg-white text-left shadow-card space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center shrink-0 mt-0.5">
+                <Users className="w-5 h-5 text-amber-800" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-heading text-lg font-bold text-[#183153]">
+                  Matching Candidates Found ({candidates.length})
+                </h3>
+                <p className="text-xs sm:text-sm text-[#4A5568] leading-relaxed">
+                  Multiple candidate records match <strong>&quot;{studentName}&quot;</strong> in <strong>{candidates[0]?.examinationCenter}</strong> ({candidates[0]?.level || level}). Please select your record below based on your school, class, or father&apos;s name to view your result:
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+              {candidates.map((cand, idx) => (
+                <div
+                  key={cand.candidateId || idx}
+                  className="bg-[#FAFAFA] rounded-xl border border-[#E6E9EE] hover:border-[#183153] hover:shadow-card transition-all p-4 flex flex-col justify-between space-y-3"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2 border-b border-slate-200 pb-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <User className="w-3.5 h-3.5 text-[#183153] shrink-0" />
+                        <span className="font-bold text-sm text-[#183153] truncate">
+                          {cand.studentName}
+                        </span>
+                      </div>
+                      <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-[#183153]">
+                        {cand.level || level}
+                      </span>
+                    </div>
+
+                    <div className="text-xs space-y-1.5 text-slate-600">
+                      <div className="flex items-start gap-1.5">
+                        <span className="text-slate-400 shrink-0 w-16">Father:</span>
+                        <span className="font-medium text-[#20252B]">
+                          {cand.fatherName || <span className="italic text-slate-400">Not recorded</span>}
+                        </span>
+                      </div>
+                      <div className="flex items-start gap-1.5">
+                        <span className="text-slate-400 shrink-0 w-16">School:</span>
+                        <span className="font-medium text-[#20252B] line-clamp-1">
+                          {cand.schoolName || <span className="italic text-slate-400">Not recorded</span>}
+                        </span>
+                      </div>
+                      <div className="flex items-start gap-1.5">
+                        <span className="text-slate-400 shrink-0 w-16">Class:</span>
+                        <span className="font-medium text-[#20252B]">
+                          {cand.classOrSection || <span className="italic text-slate-400">Not recorded</span>}
+                        </span>
+                      </div>
+                      {cand.rollNumber && (
+                        <div className="flex items-start gap-1.5">
+                          <span className="text-slate-400 shrink-0 w-16">Roll No:</span>
+                          <span className="font-medium text-[#20252B]">
+                            {cand.rollNumber}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (cand.result) {
+                        setResult(cand.result);
+                        setCandidates(null);
+                        setError(null);
+                        if (
+                          (cand.result.rank && cand.result.rank <= 3) ||
+                          (cand.result.percentage && cand.result.percentage >= 85)
+                        ) {
+                          try {
+                            confetti({
+                              particleCount: 70,
+                              spread: 60,
+                              origin: { y: 0.6 },
+                              colors: ["#183153", "#D4AF37", "#16A34A"],
+                            });
+                          } catch {}
+                        }
+                      }
+                    }}
+                    className="w-full py-2.5 px-3 rounded-lg bg-[#183153] hover:bg-[#12243d] text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>View Result</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Error States Display */}
-        {error && (
+        {error && (!candidates || candidates.length === 0) && (
           <div className="max-w-3xl mx-auto rounded-xl p-5 border text-left bg-white shadow-subtle animate-in fade-in">
             {error.code === "RESULTS_PENDING" ? (
               <div className="flex items-start gap-3.5">
@@ -665,8 +824,10 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
                 setResult(null);
                 setStudentName("");
                 setLevel("");
+                setClassOrSection("");
                 setFatherName("");
                 setSchoolName("");
+                setCandidates(null);
                 setError(null);
               }}
               branding={branding}

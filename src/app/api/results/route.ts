@@ -69,6 +69,8 @@ export async function GET(request: NextRequest) {
   const rawFather = searchParams.get("fatherName") || searchParams.get("father");
   const rawSchool = searchParams.get("schoolName") || searchParams.get("school");
   const rawLevel = searchParams.get("level") || searchParams.get("levelId");
+  const rawClass = searchParams.get("class") || searchParams.get("classOrSection");
+  const rawCandidateIndex = searchParams.get("candidateIndex");
 
   const rawRoll = searchParams.get("rollNumber") || searchParams.get("roll");
   const rawCategory = searchParams.get("category");
@@ -98,6 +100,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    if (!rawLevel || !rawLevel.trim()) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "MISSING_LEVEL",
+          message: "Please select your Examination Level (Level 1, Level 2, or Level 3) before searching.",
+        },
+        { status: 400 }
+      );
+    }
+
     const centerInfo = findCenterByIdOrName(rawCenter);
     if (!centerInfo) {
       return NextResponse.json(
@@ -113,13 +126,19 @@ export async function GET(request: NextRequest) {
     const cleanFatherInput = rawFather ? cleanSearchString(rawFather) : undefined;
     const cleanSchoolInput = rawSchool ? cleanSearchString(rawSchool) : undefined;
     const cleanLevelInput = rawLevel ? cleanSearchString(rawLevel) : undefined;
+    const cleanClassInput = rawClass ? cleanSearchString(rawClass) : undefined;
+    const cleanCandIdx = rawCandidateIndex !== null && rawCandidateIndex !== undefined && rawCandidateIndex !== "" && !isNaN(Number(rawCandidateIndex))
+      ? Number(rawCandidateIndex)
+      : undefined;
 
     const outcome = await lookupStudentResultByCenter(
       centerInfo.id,
       cleanStudentName,
       cleanFatherInput || undefined,
       cleanSchoolInput || undefined,
-      cleanLevelInput || undefined
+      cleanLevelInput || undefined,
+      cleanClassInput || undefined,
+      cleanCandIdx
     );
 
     if (outcome.code === "CENTER_NOT_CONFIGURED") {
@@ -133,7 +152,18 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (outcome.code === "AMBIGUOUS_STUDENT") {
+    if (outcome.code === "MISSING_LEVEL") {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "MISSING_LEVEL",
+          message: outcome.message,
+        },
+        { status: 400 }
+      );
+    }
+
+    if (outcome.code === "AMBIGUOUS_STUDENT" || outcome.code === "MULTIPLE_CANDIDATES") {
       return NextResponse.json(
         {
           success: false,
@@ -141,6 +171,7 @@ export async function GET(request: NextRequest) {
           duplicateDetected: true,
           code: "AMBIGUOUS_STUDENT",
           message: outcome.message,
+          candidates: outcome.candidates,
         },
         { status: 400 }
       );

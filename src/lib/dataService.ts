@@ -1,8 +1,9 @@
-import { StudentResult, CategoryId } from "./types";
+import { StudentResult, CategoryId, CandidateMatch } from "./types";
 
 export interface SearchResultResponse {
   success: boolean;
   result?: StudentResult;
+  candidates?: CandidateMatch[];
   message?: string;
   code?: string;
   duplicateDetected?: boolean;
@@ -15,8 +16,10 @@ export interface StudentSearchParams {
   studentName: string;
   examinationCenter: string;
   level?: string;
+  classOrSection?: string;
   fatherName?: string;
   schoolName?: string;
+  candidateIndex?: number;
 }
 
 export async function lookupStudentResult(
@@ -31,11 +34,17 @@ export async function lookupStudentResult(
     if (paramOrRoll.level && paramOrRoll.level.trim()) {
       queryParams.set("level", paramOrRoll.level.trim());
     }
+    if (paramOrRoll.classOrSection && paramOrRoll.classOrSection.trim()) {
+      queryParams.set("class", paramOrRoll.classOrSection.trim());
+    }
     if (paramOrRoll.fatherName && paramOrRoll.fatherName.trim()) {
       queryParams.set("fatherName", paramOrRoll.fatherName.trim());
     }
     if (paramOrRoll.schoolName && paramOrRoll.schoolName.trim()) {
       queryParams.set("schoolName", paramOrRoll.schoolName.trim());
+    }
+    if (paramOrRoll.candidateIndex !== undefined && paramOrRoll.candidateIndex !== null) {
+      queryParams.set("candidateIndex", String(paramOrRoll.candidateIndex));
     }
   } else {
     const cleanRoll = paramOrRoll.trim().toUpperCase();
@@ -63,10 +72,19 @@ export async function lookupStudentResult(
         message: data.message || "Failed to query competition examination records.",
         duplicateDetected: data.duplicateDetected,
         ambiguityDetected: data.ambiguityDetected,
+        candidates: data.candidates,
       };
     }
 
-    return data;
+    return {
+      success: Boolean(data.success),
+      result: data.result,
+      candidates: data.candidates,
+      code: data.code,
+      message: data.message,
+      duplicateDetected: data.duplicateDetected,
+      ambiguityDetected: data.ambiguityDetected,
+    };
   } catch (err: unknown) {
     return {
       success: false,

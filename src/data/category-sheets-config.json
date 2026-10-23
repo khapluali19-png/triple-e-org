@@ -1,6 +1,6 @@
 {
   "version": "2.1.0",
-  "updatedAt": "2026-10-21T15:19:23.310Z",
+  "updatedAt": "2026-10-23T20:07:32.593Z",
   "serviceAccountConfigured": false,
   "categories": {
     "lower": {
@@ -96,7 +96,7 @@
       "headerRowIndex": 1,
       "status": "connected",
       "lastTestedAt": "2026-10-19T15:39:00.447Z",
-      "lastSyncedAt": "2026-10-20T09:06:51.688Z",
+      "lastSyncedAt": "2026-10-23T20:07:32.592Z",
       "columnMappings": {
         "rollNumber": "Roll No",
         "studentName": "Student Name",
@@ -133,8 +133,8 @@
     "keris": {
       "centerId": "keris",
       "centerName": "Keris",
-      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit",
-      "spreadsheetId": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4/edit?gid=0#gid=0",
+      "spreadsheetId": "1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4",
       "worksheetName": "Keris",
       "headerRowIndex": 1,
       "status": "connected",
@@ -170,8 +170,8 @@
     "kharfaq": {
       "centerId": "kharfaq",
       "centerName": "Kharfaq",
-      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit",
-      "spreadsheetId": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4/edit?gid=0#gid=0",
+      "spreadsheetId": "1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4",
       "worksheetName": "Kharfaq",
       "headerRowIndex": 1,
       "status": "connected",
@@ -207,8 +207,8 @@
     "ghwari": {
       "centerId": "ghwari",
       "centerName": "Ghwari",
-      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit",
-      "spreadsheetId": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4/edit?gid=0#gid=0",
+      "spreadsheetId": "1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4",
       "worksheetName": "Ghwari",
       "headerRowIndex": 1,
       "status": "connected",
@@ -243,8 +243,8 @@
     "kuro": {
       "centerId": "kuro",
       "centerName": "Kuro",
-      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit",
-      "spreadsheetId": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4/edit?gid=0#gid=0",
+      "spreadsheetId": "1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4",
       "worksheetName": "Kuro",
       "headerRowIndex": 1,
       "status": "connected",
@@ -279,8 +279,8 @@
     "kharkoo": {
       "centerId": "kharkoo",
       "centerName": "Kharkoo",
-      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit",
-      "spreadsheetId": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4/edit?gid=0#gid=0",
+      "spreadsheetId": "1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4",
       "worksheetName": "Kharkoo",
       "headerRowIndex": 1,
       "status": "connected",
@@ -315,8 +315,8 @@
     "barah": {
       "centerId": "barah",
       "centerName": "Barah",
-      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit",
-      "spreadsheetId": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4/edit?gid=0#gid=0",
+      "spreadsheetId": "1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4",
       "worksheetName": "Barah",
       "headerRowIndex": 1,
       "status": "connected",
@@ -351,8 +351,8 @@
     "khaplu": {
       "centerId": "khaplu",
       "centerName": "Khaplu",
-      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit",
-      "spreadsheetId": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4/edit?gid=0#gid=0",
+      "spreadsheetId": "1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4",
       "worksheetName": "Khaplu",
       "headerRowIndex": 1,
       "status": "connected",
@@ -388,8 +388,8 @@
     "chorbat": {
       "centerId": "chorbat",
       "centerName": "Chorbat",
-      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit",
-      "spreadsheetId": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4/edit?gid=0#gid=0",
+      "spreadsheetId": "1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4",
       "worksheetName": "Chorbat",
       "headerRowIndex": 1,
       "status": "connected",
@@ -462,8 +462,8 @@
     "talis": {
       "centerId": "talis",
       "centerName": "Talis",
-      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit",
-      "spreadsheetId": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4/edit?gid=0#gid=0",
+      "spreadsheetId": "1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4",
       "worksheetName": "Talis",
       "headerRowIndex": 1,
       "status": "connected",
@@ -498,8 +498,8 @@
     "kanday": {
       "centerId": "kanday",
       "centerName": "Kanday",
-      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit",
-      "spreadsheetId": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4/edit?gid=0#gid=0",
+      "spreadsheetId": "1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4",
       "worksheetName": "Kanday",
       "headerRowIndex": 1,
       "status": "connected",
@@ -534,8 +534,8 @@
     "hushe": {
       "centerId": "hushe",
       "centerName": "Hushe",
-      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit",
-      "spreadsheetId": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4/edit?gid=0#gid=0",
+      "spreadsheetId": "1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4",
       "worksheetName": "Hushe",
       "headerRowIndex": 1,
       "status": "connected",
@@ -570,8 +570,8 @@
     "thagus": {
       "centerId": "thagus",
       "centerName": "Thagus",
-      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit",
-      "spreadsheetId": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4/edit?gid=0#gid=0",
+      "spreadsheetId": "1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4",
       "worksheetName": "Thagus",
       "headerRowIndex": 1,
       "status": "connected",
@@ -644,8 +644,8 @@
     "special-school": {
       "centerId": "special-school",
       "centerName": "Special School",
-      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit",
-      "spreadsheetId": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+      "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4/edit?gid=0#gid=0",
+      "spreadsheetId": "1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4",
       "worksheetName": "SpecialSchool",
       "headerRowIndex": 1,
       "status": "connected",

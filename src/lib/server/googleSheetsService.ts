@@ -7,7 +7,9 @@ import {
   CenterSheetConnection,
   SheetPreviewData, 
   SheetPreviewRow, 
-  StudentResult 
+  StudentResult,
+  CandidateMatch,
+  ExaminationCenterInfo 
 } from "../types";
 import { 
   getServerCategoryStore, 
@@ -545,40 +547,124 @@ export function matchesFather(rowFatherVal: any, queryFatherVal: any): boolean {
 
 /**
  * Intelligent comparison for School Name verification:
- * - Exact match
- * - Punctuation-free match (e.g. "Govt. High School" matching "Govt High School")
- * - Substring containment (e.g. "Zaki" matching "Zaki Academy")
- * - Token overlap (shared significant non-generic tokens like "zaki", "skarchan", "raisha")
+ * - Exact match & punctuation-free match
+ * - Word order independent match (e.g. "Khaplu Public School" <=> "Public School Khaplu")
+ * - Acronym expansion: G.H.S <=> Govt High School, G.M.S <=> Govt Middle School, P.S <=> Public School
+ * - Distinctive token overlap & subset containment
  */
+export function normalizeSchoolTokens(val: any): string[] {
+  if (!val) return [];
+  const raw = String(val).toLowerCase();
+  const cleaned = raw
+    .replace(/\bg\.?g\.?h\.?s\.?\b/gi, "govt girls high school")
+    .replace(/\bg\.?g\.?m\.?s\.?\b/gi, "govt girls middle school")
+    .replace(/\bg\.?g\.?p\.?s\.?\b/gi, "govt girls primary school")
+    .replace(/\bg\.?h\.?s\.?\b/gi, "govt high school")
+    .replace(/\bg\.?m\.?s\.?\b/gi, "govt middle school")
+    .replace(/\bg\.?p\.?s\.?\b/gi, "govt primary school")
+    .replace(/\bh\.?s\.?\b/gi, "high school")
+    .replace(/\bm\.?s\.?\b/gi, "middle school")
+    .replace(/\bp\.?s\.?\b/gi, "public school")
+    .replace(/\bgovt\.?\b/gi, "government")
+    .replace(/[^a-z0-9]/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return cleaned.split(" ").filter(Boolean);
+}
+
+/**
+ * Calculates a match score between candidate row school and user queried school (0 - 100).
+ * Handles word order permutation ("Khaplu Public School" vs "Public School Khaplu"),
+ * acronyms, token overlap, and distinct school names.
+ */
+export function calculateSchoolMatchScore(rowSchoolVal: any, querySchoolVal: any): number {
+  if (!rowSchoolVal || !querySchoolVal) return 0;
+
+  const rowTokens = normalizeSchoolTokens(rowSchoolVal);
+  const queryTokens = normalizeSchoolTokens(querySchoolVal);
+
+  if (rowTokens.length === 0 || queryTokens.length === 0) return 0;
+
+  const rowSorted = [...rowTokens].sort().join(" ");
+  const querySorted = [...queryTokens].sort().join(" ");
+
+  // 1. Exact match after word sorting (Word order independent, e.g. "Khaplu Public School" <=> "Public School Khaplu")
+  if (rowSorted === querySorted) return 100;
+
+  // 2. Exact match of raw joined strings
+  if (rowTokens.join(" ") === queryTokens.join(" ")) return 100;
+
+  // 3. Complete token subset (e.g. query: "Public School Khaplu", row: "Army Public School Khaplu" or vice versa)
+  const queryInRow = queryTokens.every((t) => rowTokens.includes(t));
+  const rowInQuery = rowTokens.every((t) => queryTokens.includes(t));
+  if (queryInRow || rowInQuery) return 90;
+
+  // 4. Distinctive non-stop tokens overlap
+  const stopWords = new Set(["school", "college", "public", "high", "middle", "primary", "academy", "government", "govt"]);
+  const rowDistinctive = rowTokens.filter((t) => !stopWords.has(t));
+  const queryDistinctive = queryTokens.filter((t) => !stopWords.has(t));
+
+  if (rowDistinctive.length > 0 && queryDistinctive.length > 0) {
+    const distinctiveOverlap = queryDistinctive.some(
+      (qt) => rowDistinctive.includes(qt) || rowDistinctive.some((rt) => rt.includes(qt) || qt.includes(rt))
+    );
+    if (distinctiveOverlap) return 80;
+    // Both specified distinctive names (e.g. "Zaki" vs "Tameer-e-Millat"), but none match -> CONFLICT!
+    return -100;
+  }
+
+  // 5. General generic overlap (e.g. "Public School" and "Public School")
+  const commonTokens = queryTokens.filter((t) => rowTokens.includes(t));
+  if (commonTokens.length >= 2) return 60;
+  if (commonTokens.length === 1) return 40;
+
+  return 0;
+}
+
 export function matchesSchool(rowSchoolVal: any, querySchoolVal: any): boolean {
   if (!rowSchoolVal || !querySchoolVal) return false;
+  return calculateSchoolMatchScore(rowSchoolVal, querySchoolVal) >= 40;
+}
 
-  const rowNorm = normalizeSearchString(rowSchoolVal);
-  const queryNorm = normalizeSearchString(querySchoolVal);
-  if (rowNorm === queryNorm) return true;
+/**
+ * Extracts numeric class grade (e.g. "4th" -> 4, "10th" -> 10, "1st year" -> 11).
+ */
+export function extractClassNumber(val: any): number | null {
+  if (val === null || val === undefined) return null;
+  const str = String(val).trim().toLowerCase();
+  const match = str.match(/\b(4|5|6|7|8|9|10|11|12)(th|st|nd|rd)?\b/);
+  if (match) return parseInt(match[1], 10);
+  if (str.includes("1st year") || str.includes("first year") || str.includes("11")) return 11;
+  if (str.includes("2nd year") || str.includes("second year") || str.includes("12")) return 12;
+  return null;
+}
 
-  const rowPunct = stripPunctuation(rowSchoolVal);
-  const queryPunct = stripPunctuation(querySchoolVal);
-  if (rowPunct === queryPunct) return true;
+/**
+ * Calculates match score for Class / Section filter (0 - 100).
+ */
+export function calculateClassMatchScore(rowClassVal: any, queryClassVal: any): number {
+  if (!rowClassVal || !queryClassVal) return 0;
 
-  // Substring containment
-  if (rowPunct.includes(queryPunct) || queryPunct.includes(rowPunct)) {
-    return true;
+  const rNum = extractClassNumber(rowClassVal);
+  const qNum = extractClassNumber(queryClassVal);
+
+  if (rNum !== null && qNum !== null) {
+    return rNum === qNum ? 100 : -100; // Exact match or complete conflict
   }
 
-  // Token overlap on significant terms
-  const stopWords = new Set(["school", "college", "public", "high", "primary", "academy", "govt", "government"]);
-  const rowTokens = rowPunct.split(" ").filter((w: string) => w && !stopWords.has(w));
-  const queryTokens = queryPunct.split(" ").filter((w: string) => w && !stopWords.has(w));
+  const rNorm = String(rowClassVal).trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+  const qNorm = String(queryClassVal).trim().toLowerCase().replace(/[^a-z0-9]/g, "");
 
-  if (rowTokens.length > 0 && queryTokens.length > 0) {
-    const hasOverlap = queryTokens.some(
-      (t: string) => rowTokens.includes(t) || rowTokens.some((rt: string) => rt.includes(t) || t.includes(rt))
-    );
-    if (hasOverlap) return true;
-  }
+  if (rNorm === qNorm) return 100;
+  if (rNorm.includes(qNorm) || qNorm.includes(rNorm)) return 80;
 
-  return false;
+  return -100;
+}
+
+export function matchesClass(rowClassVal: any, queryClassVal: any): boolean {
+  if (!rowClassVal || !queryClassVal) return false;
+  return calculateClassMatchScore(rowClassVal, queryClassVal) >= 70;
 }
 
 /**
@@ -1622,31 +1708,122 @@ export function getCenterBenchmarkSheetData(
 }
 
 /**
+ * Constructs a fully populated StudentResult object from a raw sheet row and resolved column indices.
+ */
+export function buildStudentResultFromRow(
+  row: string[],
+  centerInfo: ExaminationCenterInfo,
+  colIndices: {
+    nameColIdx: number;
+    fatherColIdx: number;
+    classColIdx: number;
+    schoolColIdx: number;
+    tehsilColIdx: number;
+    obtColIdx: number;
+    totColIdx: number;
+    levelColIdx: number;
+    rollColIdx: number;
+  },
+  cleanTargetLevel?: string,
+  fallbackStudentName?: string
+): StudentResult {
+  const getCol = (idx: number): string => {
+    if (idx === -1 || idx >= row.length || row[idx] === undefined) return "";
+    return String(row[idx]).trim();
+  };
+
+  const studentName = getCol(colIndices.nameColIdx) || fallbackStudentName || "Candidate";
+  const fatherName = getCol(colIndices.fatherColIdx) || undefined;
+  const classOrSection = getCol(colIndices.classColIdx) || undefined;
+  const schoolName = getCol(colIndices.schoolColIdx) || undefined;
+  const tehsil = getCol(colIndices.tehsilColIdx) || centerInfo.tehsil || undefined;
+  const rawRowLevel = getCol(colIndices.levelColIdx);
+  const derivedRowLevel = getRowLevel(row, colIndices.levelColIdx, colIndices.classColIdx);
+  const level = rawRowLevel || derivedRowLevel || cleanTargetLevel || undefined;
+  const levelDescription = getLevelDescription(level) || undefined;
+  const rollNumber = colIndices.rollColIdx !== -1 && getCol(colIndices.rollColIdx) ? getCol(colIndices.rollColIdx) : undefined;
+
+  const rawObt = getCol(colIndices.obtColIdx);
+  const rawTot = getCol(colIndices.totColIdx);
+
+  let obtainedMarks: number | undefined = undefined;
+  let totalMarks: number | undefined = undefined;
+  let percentage: number | undefined = undefined;
+  let grade: string | undefined = undefined;
+  let passFailStatus: StudentResult["passFailStatus"] = undefined;
+
+  const marksEval = validateAndCalculateMarks(rawObt, rawTot);
+  if (marksEval.valid) {
+    obtainedMarks = marksEval.obtainedMarks;
+    totalMarks = marksEval.totalMarks;
+    percentage = marksEval.percentage;
+    grade = marksEval.grade;
+    passFailStatus = percentage >= 50 ? "Passed" : "Failed";
+  } else {
+    const cleanObt = String(rawObt).trim().replace(/[^0-9.]/g, "");
+    if (cleanObt && !isNaN(Number(cleanObt))) {
+      obtainedMarks = Number(cleanObt);
+    }
+    const cleanTot = String(rawTot).trim().replace(/[^0-9.]/g, "");
+    if (cleanTot && !isNaN(Number(cleanTot)) && Number(cleanTot) > 0) {
+      totalMarks = Number(cleanTot);
+      if (obtainedMarks !== undefined) {
+        percentage = Math.round(((obtainedMarks / totalMarks) * 100) * 10) / 10;
+        grade = calculateGradeFromPercentage(percentage);
+        passFailStatus = percentage >= 50 ? "Passed" : "Failed";
+      }
+    }
+  }
+
+  return {
+    studentName,
+    fatherName,
+    schoolName,
+    classOrSection,
+    tehsil,
+    examinationCenter: centerInfo.name,
+    centerId: centerInfo.id,
+    level,
+    levelDescription,
+    rollNumber,
+    obtainedMarks,
+    totalMarks,
+    percentage,
+    grade,
+    passFailStatus,
+    verifiedAt: new Date().toISOString(),
+  };
+}
+
+/**
  * Searches and validates student result from the connected Google Sheet for an Examination Center.
- * Primary Search Key: Student Name (mandatory).
- * Secondary Verification: Father's Name (optional).
- * Additional Verification: School Name (optional).
- * Examination Center: Required selection determining which spreadsheet to query.
+ * Required search fields: Examination Center, Student Name, Level (Level 1, Level 2, or Level 3).
+ * Optional filters: Class, Father's Name, School Name.
  */
 export async function lookupStudentResultByCenter(
   centerQuery: string,
   studentNameInput: string,
   fatherNameInput?: string,
   schoolNameInput?: string,
-  levelInput?: string
+  levelInput?: string,
+  classInput?: string,
+  candidateIndex?: number
 ): Promise<{
   success: boolean;
   result?: StudentResult;
+  candidates?: CandidateMatch[];
   message?: string;
   ambiguityDetected?: boolean;
   code?: 
     | "SUCCESS"
     | "NOT_FOUND"
     | "AMBIGUOUS_STUDENT"
+    | "MULTIPLE_CANDIDATES"
     | "VERIFICATION_FAILED"
     | "CENTER_NOT_CONFIGURED"
     | "SHEET_ERROR"
-    | "INVALID_INPUT";
+    | "INVALID_INPUT"
+    | "MISSING_LEVEL";
 }> {
   const cleanName = normalizeSearchString(studentNameInput);
   if (!cleanName) {
@@ -1663,6 +1840,16 @@ export async function lookupStudentResultByCenter(
       success: false,
       code: "INVALID_INPUT",
       message: "Please select a valid Examination Center from the list of 15 centers.",
+    };
+  }
+
+  // Mandatory Level Selection (Requirement 1)
+  const cleanTargetLevel = normalizeLevelString(levelInput);
+  if (!cleanTargetLevel) {
+    return {
+      success: false,
+      code: "MISSING_LEVEL",
+      message: "Please select your Examination Level (Level 1, Level 2, or Level 3) before searching.",
     };
   }
 
@@ -1726,6 +1913,18 @@ export async function lookupStudentResultByCenter(
   const levelColIdx = findColumnIndex(headers, mappings.level, HEADER_ALIASES.level);
   const rollColIdx = findColumnIndex(headers, mappings.rollNumber, HEADER_ALIASES.rollNumber);
 
+  const colIndices = {
+    nameColIdx,
+    fatherColIdx,
+    classColIdx,
+    schoolColIdx,
+    tehsilColIdx,
+    obtColIdx,
+    totColIdx,
+    levelColIdx,
+    rollColIdx,
+  };
+
   if (nameColIdx === -1) {
     return {
       success: false,
@@ -1781,275 +1980,263 @@ export async function lookupStudentResultByCenter(
     };
   }
 
-  // 4.1 Filter by Level (if levelInput is provided)
-  const cleanTargetLevel = normalizeLevelString(levelInput);
-  let candidateMatches = nameMatches;
+  // 4.1 Filter by selected Level (Requirement 1 & 6: Always prioritize center, name, and selected Level)
+  const candidateMatches = nameMatches.filter((r) => {
+    const rowLevel = getRowLevel(r, levelColIdx, classColIdx);
+    return rowLevel === cleanTargetLevel;
+  });
 
-  if (cleanTargetLevel) {
-    const filteredByLevel = nameMatches.filter((r) => {
-      const rowLevel = getRowLevel(r, levelColIdx, classColIdx);
-      return rowLevel === cleanTargetLevel;
-    });
-
-    if (filteredByLevel.length > 0) {
-      candidateMatches = filteredByLevel;
-    } else {
-      return {
-        success: false,
-        code: "NOT_FOUND",
-        message: `No verified result record was found for student "${studentNameInput.trim()}" in ${cleanTargetLevel} at ${centerInfo.name} examination center. Please verify that your examination level is correct.`,
-      };
-    }
+  if (candidateMatches.length === 0) {
+    return {
+      success: false,
+      code: "NOT_FOUND",
+      message: `No verified result record was found for student "${studentNameInput.trim()}" in ${cleanTargetLevel} at ${centerInfo.name} examination center. Please verify that your examination level is correct.`,
+    };
   }
 
+  // 4.2 Explicit Candidate Selection (Requirement 5: User selected specific candidate)
+  if (
+    candidateIndex !== undefined &&
+    candidateIndex !== null &&
+    !isNaN(candidateIndex) &&
+    candidateIndex >= 0 &&
+    candidateIndex < candidateMatches.length
+  ) {
+    const pickedRow = candidateMatches[candidateIndex];
+    const pickedResult = buildStudentResultFromRow(pickedRow, centerInfo, colIndices, cleanTargetLevel, studentNameInput);
+    return {
+      success: true,
+      result: pickedResult,
+      code: "SUCCESS",
+    };
+  }
+
+  // Optional filters (Requirement 2 & 4)
   const cleanFather = fatherNameInput ? fatherNameInput.trim() : null;
   const cleanSchool = schoolNameInput ? schoolNameInput.trim() : null;
+  const cleanClass = classInput ? classInput.trim() : null;
 
-  let selectedCandidate: string[] | null = null;
-
-  // Case A: Exactly 1 student found with this name (and level) in this center
+  // Case A: Exactly 1 candidate found in this center and level
   if (candidateMatches.length === 1) {
     const single = candidateMatches[0];
     const rowFather = fatherColIdx !== -1 ? single[fatherColIdx] : "";
     const rowSchool = schoolColIdx !== -1 ? single[schoolColIdx] : "";
+    const rowClass = classColIdx !== -1 ? single[classColIdx] : "";
 
-    // If fatherName was provided by user
+    // If fatherName provided
     if (cleanFather) {
       if (rowFather && rowFather.trim()) {
         if (!matchesFather(rowFather, cleanFather)) {
-          // Father name does NOT match! Check if school name rescues it
-          if (cleanSchool && rowSchool && matchesSchool(rowSchool, cleanSchool)) {
-            selectedCandidate = single;
-          } else {
+          // Check if school or class rescues it
+          const schoolRescues = cleanSchool && rowSchool && matchesSchool(rowSchool, cleanSchool);
+          const classRescues = cleanClass && rowClass && matchesClass(rowClass, cleanClass);
+          if (!schoolRescues && !classRescues) {
             return {
               success: false,
               code: "VERIFICATION_FAILED",
               message: `The provided Father's Name does not match our records for "${studentNameInput.trim()}" in ${centerInfo.name}. Please verify your details.`,
             };
           }
-        } else {
-          // Father matches! If school is also provided, check school
-          if (cleanSchool && rowSchool && !matchesSchool(rowSchool, cleanSchool)) {
+        }
+      }
+      // If rowFather is blank in sheet, accept as student did not provide father name during registration
+    }
+
+    // If schoolName provided (Flexible school matching: word order permutation, acronyms)
+    if (cleanSchool) {
+      if (rowSchool && rowSchool.trim()) {
+        if (!matchesSchool(rowSchool, cleanSchool)) {
+          const fatherRescues = cleanFather && rowFather && matchesFather(rowFather, cleanFather);
+          const classRescues = cleanClass && rowClass && matchesClass(rowClass, cleanClass);
+          if (!fatherRescues && !classRescues) {
             return {
               success: false,
               code: "VERIFICATION_FAILED",
               message: `The provided School Name does not match our records for "${studentNameInput.trim()}" in ${centerInfo.name}. Please verify your details.`,
             };
           }
-          selectedCandidate = single;
         }
-      } else {
-        // Father name is missing from the spreadsheet row (e.g. student did not provide it during registration)
-        if (cleanSchool && rowSchool && !matchesSchool(rowSchool, cleanSchool)) {
-          return {
-            success: false,
-            code: "VERIFICATION_FAILED",
-            message: `The provided School Name does not match our records for "${studentNameInput.trim()}" in ${centerInfo.name}. Please verify your details.`,
-          };
-        }
-        // Single match with omitted father name in sheet -> Accept!
-        selectedCandidate = single;
       }
-    } else {
-      // User did not provide father name
-      if (cleanSchool && rowSchool && !matchesSchool(rowSchool, cleanSchool)) {
-        return {
-          success: false,
-          code: "VERIFICATION_FAILED",
-          message: `The provided School Name does not match our records for "${studentNameInput.trim()}" in ${centerInfo.name}. Please verify your details.`,
-        };
-      }
-      // Unique match with omitted optional fields -> Accept!
-      selectedCandidate = single;
     }
-  } else {
-    // Case B: Multiple students share the matching name in this center and level!
-    // Disambiguation protocol:
-    if (cleanFather) {
-      const fatherMatches = candidateMatches.filter((r) => {
-        const rf = fatherColIdx !== -1 ? r[fatherColIdx] : "";
-        return matchesFather(rf, cleanFather);
-      });
 
-      if (fatherMatches.length === 1) {
-        // Uniquely identified by father name
-        const match = fatherMatches[0];
-        const rowSchool = schoolColIdx !== -1 ? match[schoolColIdx] : "";
-        if (cleanSchool && rowSchool && !matchesSchool(rowSchool, cleanSchool)) {
-          return {
-            success: false,
-            code: "VERIFICATION_FAILED",
-            message: `The provided School Name does not match the record for "${studentNameInput.trim()}" in ${centerInfo.name}.`,
-          };
-        }
-        selectedCandidate = match;
-      } else if (fatherMatches.length > 1) {
-        // Multiple students have same name AND same father -> check school name
-        if (cleanSchool) {
-          const schoolMatches = fatherMatches.filter((r) => {
-            const rs = schoolColIdx !== -1 ? r[schoolColIdx] : "";
-            return matchesSchool(rs, cleanSchool);
-          });
-          if (schoolMatches.length === 1) {
-            selectedCandidate = schoolMatches[0];
-          } else {
-            return {
-              success: false,
-              ambiguityDetected: true,
-              code: "AMBIGUOUS_STUDENT",
-              message: `Multiple records found with the name "${studentNameInput.trim()}", Father's Name "${fatherNameInput?.trim()}", and School "${schoolNameInput?.trim()}" in ${centerInfo.name}. Please contact the Examination Committee.`,
-            };
-          }
-        } else {
-          return {
-            success: false,
-            ambiguityDetected: true,
-            code: "AMBIGUOUS_STUDENT",
-            message: `Multiple students found with the name "${studentNameInput.trim()}" and Father's Name "${fatherNameInput?.trim()}" in ${centerInfo.name}. Please enter your School Name to verify your result.`,
-          };
-        }
-      } else {
-        // Father name did not match any candidate
-        if (cleanSchool) {
-          // Fallback: check if school name uniquely matches any of the candidates
-          const schoolMatches = candidateMatches.filter((r) => {
-            const rs = schoolColIdx !== -1 ? r[schoolColIdx] : "";
-            return matchesSchool(rs, cleanSchool);
-          });
-          if (schoolMatches.length === 1) {
-            selectedCandidate = schoolMatches[0];
-          } else {
+    // If class provided
+    if (cleanClass) {
+      if (rowClass && rowClass.trim()) {
+        if (!matchesClass(rowClass, cleanClass)) {
+          const fatherRescues = cleanFather && rowFather && matchesFather(rowFather, cleanFather);
+          const schoolRescues = cleanSchool && rowSchool && matchesSchool(rowSchool, cleanSchool);
+          if (!fatherRescues && !schoolRescues) {
             return {
               success: false,
               code: "VERIFICATION_FAILED",
-              message: `The provided verification details do not match any student record found for "${studentNameInput.trim()}" in ${centerInfo.name}.`,
+              message: `The provided Class does not match our records for "${studentNameInput.trim()}" in ${centerInfo.name}. Please verify your details.`,
             };
           }
-        } else {
-          return {
-            success: false,
-            code: "VERIFICATION_FAILED",
-            message: `The provided Father's Name "${fatherNameInput?.trim()}" does not match any record found for "${studentNameInput.trim()}" in ${centerInfo.name}.`,
-          };
         }
       }
-    } else if (cleanSchool) {
-      // User did not provide father name, but provided school name
-      const schoolMatches = candidateMatches.filter((r) => {
-        const rs = schoolColIdx !== -1 ? r[schoolColIdx] : "";
-        return matchesSchool(rs, cleanSchool);
-      });
+    }
 
-      if (schoolMatches.length === 1) {
-        selectedCandidate = schoolMatches[0];
-      } else if (schoolMatches.length > 1) {
-        return {
-          success: false,
-          ambiguityDetected: true,
-          code: "AMBIGUOUS_STUDENT",
-          message: `Multiple candidates were found with the name "${studentNameInput.trim()}" in the specified school. Please enter your Father's Name to identify your result.`,
-        };
+    const singleResult = buildStudentResultFromRow(single, centerInfo, colIndices, cleanTargetLevel, studentNameInput);
+    return {
+      success: true,
+      result: singleResult,
+      code: "SUCCESS",
+    };
+  }
+
+  // Case B: Multiple students share the matching name in this center and level!
+  // Disambiguation protocol using optional filters (Class, Father's Name, School Name)
+  const scoredCandidates = candidateMatches.map((r, originalIdx) => {
+    const rowFather = fatherColIdx !== -1 ? r[fatherColIdx] : "";
+    const rowSchool = schoolColIdx !== -1 ? r[schoolColIdx] : "";
+    const rowClass = classColIdx !== -1 ? r[classColIdx] : "";
+
+    let fatherScore = 0;
+    let schoolScore = 0;
+    let classScore = 0;
+    let isDisqualified = false;
+
+    // 1. Father match scoring
+    if (cleanFather) {
+      if (rowFather && rowFather.trim()) {
+        if (matchesFather(rowFather, cleanFather)) {
+          fatherScore = 60;
+        } else {
+          fatherScore = -100;
+          isDisqualified = true;
+        }
       } else {
+        fatherScore = 10; // Missing father name is compatible, neutral
+      }
+    }
+
+    // 2. School match scoring (flexible word-order, acronyms, token overlap)
+    if (cleanSchool) {
+      if (rowSchool && rowSchool.trim()) {
+        const sScore = calculateSchoolMatchScore(rowSchool, cleanSchool);
+        if (sScore >= 80) {
+          schoolScore = 50;
+        } else if (sScore >= 40) {
+          schoolScore = 30;
+        } else {
+          schoolScore = -100;
+          isDisqualified = true;
+        }
+      } else {
+        schoolScore = 10; // Missing school name is compatible
+      }
+    }
+
+    // 3. Class match scoring
+    if (cleanClass) {
+      if (rowClass && rowClass.trim()) {
+        const cScore = calculateClassMatchScore(rowClass, cleanClass);
+        if (cScore >= 70) {
+          classScore = 40;
+        } else {
+          classScore = -100;
+          isDisqualified = true;
+        }
+      } else {
+        classScore = 10; // Missing class is compatible
+      }
+    }
+
+    const totalScore = fatherScore + schoolScore + classScore;
+
+    return {
+      row: r,
+      originalIndex: originalIdx,
+      fatherScore,
+      schoolScore,
+      classScore,
+      totalScore,
+      isDisqualified,
+    };
+  });
+
+  const hasOptionalFilters = Boolean(cleanFather || cleanSchool || cleanClass);
+
+  if (hasOptionalFilters) {
+    const eligible = scoredCandidates.filter((c) => !c.isDisqualified);
+
+    // If exactly one reliable candidate remains
+    if (eligible.length === 1) {
+      const selectedResult = buildStudentResultFromRow(
+        eligible[0].row,
+        centerInfo,
+        colIndices,
+        cleanTargetLevel,
+        studentNameInput
+      );
+      return {
+        success: true,
+        result: selectedResult,
+        code: "SUCCESS",
+      };
+    }
+
+    // If multiple remain, check if one clearly has the highest positive score
+    if (eligible.length > 1) {
+      eligible.sort((a, b) => b.totalScore - a.totalScore);
+      if (eligible[0].totalScore > eligible[1].totalScore && eligible[0].totalScore >= 30) {
+        const selectedResult = buildStudentResultFromRow(
+          eligible[0].row,
+          centerInfo,
+          colIndices,
+          cleanTargetLevel,
+          studentNameInput
+        );
         return {
-          success: false,
-          code: "VERIFICATION_FAILED",
-          message: `The provided School Name "${schoolNameInput?.trim()}" does not match any record found for "${studentNameInput.trim()}" in ${centerInfo.name}.`,
+          success: true,
+          result: selectedResult,
+          code: "SUCCESS",
         };
       }
-    } else {
-      // Both optional fields omitted with multiple candidates
+    }
+
+    // If all candidates were disqualified by the user's specific inputs
+    if (eligible.length === 0) {
       return {
         success: false,
-        ambiguityDetected: true,
-        code: "AMBIGUOUS_STUDENT",
-        message: `Multiple candidates were found with the name "${studentNameInput.trim()}"${cleanTargetLevel ? ` in ${cleanTargetLevel}` : ""}. Please enter your Father's Name to identify your result.`,
+        code: "VERIFICATION_FAILED",
+        message: `The provided verification details (Father's Name, School, or Class) do not match any student record found for "${studentNameInput.trim()}" in ${centerInfo.name}. Please check your details or clear optional filters to see all matching candidates.`,
       };
     }
   }
 
-  if (!selectedCandidate) {
+  // Multiple candidates still match (Requirement 5: Show the matching candidates and ask the user to select the correct one)
+  const pool = hasOptionalFilters && scoredCandidates.some((c) => !c.isDisqualified)
+    ? scoredCandidates.filter((c) => !c.isDisqualified)
+    : scoredCandidates;
+
+  const candidateList: CandidateMatch[] = pool.map((c) => {
+    const res = buildStudentResultFromRow(
+      c.row,
+      centerInfo,
+      colIndices,
+      cleanTargetLevel,
+      studentNameInput
+    );
     return {
-      success: false,
-      code: "NOT_FOUND",
-      message: `No verified result record was found for "${studentNameInput.trim()}" in ${centerInfo.name}.`,
+      candidateId: String(c.originalIndex),
+      studentName: res.studentName,
+      fatherName: res.fatherName,
+      schoolName: res.schoolName,
+      classOrSection: res.classOrSection,
+      tehsil: res.tehsil,
+      level: res.level,
+      rollNumber: res.rollNumber,
+      examinationCenter: centerInfo.name,
+      result: res,
     };
-  }
-
-  // 5. Construct Result Card Data
-  const getCol = (idx: number): string => {
-    if (idx === -1 || idx >= selectedCandidate!.length || selectedCandidate![idx] === undefined) {
-      return "";
-    }
-    return String(selectedCandidate![idx]).trim();
-  };
-
-  const studentName = getCol(nameColIdx) || studentNameInput.trim();
-  const fatherName = getCol(fatherColIdx) || undefined;
-  const classOrSection = getCol(classColIdx) || undefined;
-  const schoolName = getCol(schoolColIdx) || undefined;
-  const tehsil = getCol(tehsilColIdx) || centerInfo.tehsil || undefined;
-  const rawRowLevel = getCol(levelColIdx);
-  const derivedRowLevel = getRowLevel(selectedCandidate, levelColIdx, classColIdx);
-  const level = rawRowLevel || derivedRowLevel || cleanTargetLevel || undefined;
-  const levelDescription = getLevelDescription(level) || undefined;
-  const rollNumber = rollColIdx !== -1 && getCol(rollColIdx) ? getCol(rollColIdx) : undefined;
-
-  // Marks Calculation
-  const rawObt = getCol(obtColIdx);
-  const rawTot = getCol(totColIdx);
-
-  let obtainedMarks: number | undefined = undefined;
-  let totalMarks: number | undefined = undefined;
-  let percentage: number | undefined = undefined;
-  let grade: string | undefined = undefined;
-  let passFailStatus: StudentResult["passFailStatus"] = undefined;
-
-  const marksEval = validateAndCalculateMarks(rawObt, rawTot);
-  if (marksEval.valid) {
-    obtainedMarks = marksEval.obtainedMarks;
-    totalMarks = marksEval.totalMarks;
-    percentage = marksEval.percentage;
-    grade = marksEval.grade;
-    passFailStatus = percentage >= 50 ? "Passed" : "Failed";
-  } else {
-    // If only obtained marks is present
-    const cleanObt = String(rawObt).trim().replace(/[^0-9.]/g, "");
-    if (cleanObt && !isNaN(Number(cleanObt))) {
-      obtainedMarks = Number(cleanObt);
-    }
-    const cleanTot = String(rawTot).trim().replace(/[^0-9.]/g, "");
-    if (cleanTot && !isNaN(Number(cleanTot)) && Number(cleanTot) > 0) {
-      totalMarks = Number(cleanTot);
-      if (obtainedMarks !== undefined) {
-        percentage = Math.round(((obtainedMarks / totalMarks) * 100) * 10) / 10;
-        grade = calculateGradeFromPercentage(percentage);
-        passFailStatus = percentage >= 50 ? "Passed" : "Failed";
-      }
-    }
-  }
-
-  const result: StudentResult = {
-    studentName,
-    fatherName,
-    schoolName,
-    classOrSection,
-    tehsil,
-    examinationCenter: centerInfo.name,
-    centerId: centerInfo.id,
-    level,
-    levelDescription,
-    rollNumber,
-    obtainedMarks,
-    totalMarks,
-    percentage,
-    grade,
-    passFailStatus,
-    verifiedAt: new Date().toISOString(),
-  };
+  });
 
   return {
-    success: true,
-    result,
-    code: "SUCCESS",
+    success: false,
+    ambiguityDetected: true,
+    code: "AMBIGUOUS_STUDENT",
+    message: `Multiple candidate records were found with the name "${studentNameInput.trim()}" in ${cleanTargetLevel} at ${centerInfo.name}. Please enter your father's name, class, school, or select your record below:`,
+    candidates: candidateList,
   };
 }

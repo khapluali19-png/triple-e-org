@@ -43,6 +43,19 @@ export interface ExaminationCenterInfo {
   description?: string;
 }
 
+export interface CandidateMatch {
+  candidateId: string;
+  studentName: string;
+  fatherName?: string;
+  schoolName?: string;
+  classOrSection?: string;
+  tehsil?: string;
+  level?: string;
+  rollNumber?: string;
+  examinationCenter: string;
+  result?: StudentResult;
+}
+
 export interface StudentResult {
   rollNumber?: string;
   studentName: string;
