@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
       studentName: reqStudentName,
       fatherName: reqFatherName,
       schoolName,
+      level: reqLevel,
       categoryId, 
       rollNumber, 
       spreadsheetUrl, 
@@ -44,7 +45,8 @@ export async function POST(request: NextRequest) {
         targetCenter,
         targetName,
         reqFatherName,
-        schoolName
+        schoolName,
+        reqLevel
       );
       return NextResponse.json({
         ...outcome,

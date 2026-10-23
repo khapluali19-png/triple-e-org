@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import os from "os";
-import { WebsiteBrandingConfig } from "../types";
+import { WebsiteBrandingConfig, CountdownConfig } from "../types";
 import { DEFAULT_BRANDING, DEFAULT_COUNTDOWN } from "../constants";
 import { logAdminActivity } from "./adminAuthStore";
 
@@ -184,10 +184,11 @@ export function saveWebsiteBranding(
       ...(updates.partnerAttribution || {}),
     },
     countdown: {
-      ...(current.countdown || DEFAULT_BRANDING.countdown || {}),
+      ...DEFAULT_BRANDING.countdown,
+      ...(current.countdown || {}),
       ...(updates.countdown || {}),
       enabled: isCountdownOn,
-    },
+    } as CountdownConfig,
     resultsPublished: !isCountdownOn,
   };
 

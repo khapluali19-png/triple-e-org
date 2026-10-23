@@ -37,7 +37,7 @@ async function runLookupVerificationSuite() {
   console.log("   TRIPLE E - GOOGLE SHEETS LOOKUP & DYNAMIC GRADING QA     ");
   console.log("============================================================\n");
 
-  const useProd = fs.existsSync(path.join(process.cwd(), ".next"));
+  const useProd = fs.existsSync(path.join(process.cwd(), ".next", "BUILD_ID"));
   console.log(`[Setup] Spawning Next.js server (${useProd ? "production" : "dev"}) on port ${PORT}...`);
   const serverProcess = spawn(
     process.platform === "win32" ? "npx.cmd" : "npx",
@@ -245,7 +245,14 @@ async function runLookupVerificationSuite() {
     process.exitCode = 1;
   } finally {
     console.log("[Teardown] Shutting down Next.js test server...");
-    serverProcess.kill("SIGTERM");
+    if (process.platform === "win32" && serverProcess.pid) {
+      try {
+        const { execSync } = await import("child_process");
+        execSync(`taskkill /F /T /PID ${serverProcess.pid}`, { stdio: "ignore" });
+      } catch {}
+    } else {
+      serverProcess.kill("SIGTERM");
+    }
   }
 }
 

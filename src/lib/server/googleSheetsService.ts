@@ -582,6 +582,85 @@ export function matchesSchool(rowSchoolVal: any, querySchoolVal: any): boolean {
 }
 
 /**
+ * Normalizes user or sheet level strings into canonical format: "Level 1" | "Level 2" | "Level 3" | null
+ */
+export function normalizeLevelString(val: any): "Level 1" | "Level 2" | "Level 3" | null {
+  if (val === null || val === undefined) return null;
+  const str = String(val).trim().toLowerCase();
+  if (!str) return null;
+
+  if (str.includes("3") || str === "level 3" || str === "l3" || str === "open") return "Level 3";
+  if (str.includes("2") || str === "level 2" || str === "l2") return "Level 2";
+  if (str.includes("1") || str === "level 1" || str === "l1") return "Level 1";
+
+  return null;
+}
+
+/**
+ * Derives competition level from student's class or section when Level column is omitted or blank:
+ * Level 1: Classes 4 to 8
+ * Level 2: Classes 9 to 12
+ * Level 3: Open / College / University
+ */
+export function deriveLevelFromClass(classVal: any): "Level 1" | "Level 2" | "Level 3" | null {
+  if (classVal === null || classVal === undefined) return null;
+  const raw = String(classVal).trim().toLowerCase();
+  if (!raw) return null;
+
+  if (
+    raw.includes("open") || 
+    raw.includes("college") || 
+    raw.includes("uni") || 
+    raw.includes("bs") || 
+    raw.includes("degree") ||
+    raw.includes("level 3") ||
+    raw.includes("level-3")
+  ) {
+    return "Level 3";
+  }
+
+  if (
+    /\b(9|10|11|12)(th)?\b/i.test(raw) ||
+    raw.includes("matric") ||
+    raw.includes("fsc") ||
+    raw.includes("ics") ||
+    raw.includes("fa") ||
+    raw.includes("inter") ||
+    raw.includes("1st year") ||
+    raw.includes("2nd year")
+  ) {
+    return "Level 2";
+  }
+
+  if (
+    /\b(4|5|6|7|8)(th)?\b/i.test(raw) ||
+    raw.includes("middle") ||
+    raw.includes("primary")
+  ) {
+    return "Level 1";
+  }
+
+  return null;
+}
+
+/**
+ * Resolves the competition level for a sheet row from explicit level column or class column.
+ */
+export function getRowLevel(row: string[], levelColIdx: number, classColIdx: number): "Level 1" | "Level 2" | "Level 3" | null {
+  if (levelColIdx !== -1 && levelColIdx < row.length) {
+    const rawLevel = row[levelColIdx];
+    const normalized = normalizeLevelString(rawLevel);
+    if (normalized) return normalized;
+  }
+  if (classColIdx !== -1 && classColIdx < row.length) {
+    const rawClass = row[classColIdx];
+    const derived = deriveLevelFromClass(rawClass);
+    if (derived) return derived;
+  }
+  return null;
+}
+
+/**
  * Finds column index flexibly using explicit mapping first, then alias matching.
  */
 export function findColumnIndex(
@@ -1553,7 +1632,8 @@ export async function lookupStudentResultByCenter(
   centerQuery: string,
   studentNameInput: string,
   fatherNameInput?: string,
-  schoolNameInput?: string
+  schoolNameInput?: string,
+  levelInput?: string
 ): Promise<{
   success: boolean;
   result?: StudentResult;
@@ -1701,14 +1781,35 @@ export async function lookupStudentResultByCenter(
     };
   }
 
+  // 4.1 Filter by Level (if levelInput is provided)
+  const cleanTargetLevel = normalizeLevelString(levelInput);
+  let candidateMatches = nameMatches;
+
+  if (cleanTargetLevel) {
+    const filteredByLevel = nameMatches.filter((r) => {
+      const rowLevel = getRowLevel(r, levelColIdx, classColIdx);
+      return rowLevel === cleanTargetLevel;
+    });
+
+    if (filteredByLevel.length > 0) {
+      candidateMatches = filteredByLevel;
+    } else {
+      return {
+        success: false,
+        code: "NOT_FOUND",
+        message: `No verified result record was found for student "${studentNameInput.trim()}" in ${cleanTargetLevel} at ${centerInfo.name} examination center. Please verify that your examination level is correct.`,
+      };
+    }
+  }
+
   const cleanFather = fatherNameInput ? fatherNameInput.trim() : null;
   const cleanSchool = schoolNameInput ? schoolNameInput.trim() : null;
 
   let selectedCandidate: string[] | null = null;
 
-  // Case A: Exactly 1 student found with this name in this center
-  if (nameMatches.length === 1) {
-    const single = nameMatches[0];
+  // Case A: Exactly 1 student found with this name (and level) in this center
+  if (candidateMatches.length === 1) {
+    const single = candidateMatches[0];
     const rowFather = fatherColIdx !== -1 ? single[fatherColIdx] : "";
     const rowSchool = schoolColIdx !== -1 ? single[schoolColIdx] : "";
 
@@ -1738,7 +1839,7 @@ export async function lookupStudentResultByCenter(
           selectedCandidate = single;
         }
       } else {
-        // Father name is missing from the spreadsheet row -> check school if provided
+        // Father name is missing from the spreadsheet row (e.g. student did not provide it during registration)
         if (cleanSchool && rowSchool && !matchesSchool(rowSchool, cleanSchool)) {
           return {
             success: false,
@@ -1746,6 +1847,7 @@ export async function lookupStudentResultByCenter(
             message: `The provided School Name does not match our records for "${studentNameInput.trim()}" in ${centerInfo.name}. Please verify your details.`,
           };
         }
+        // Single match with omitted father name in sheet -> Accept!
         selectedCandidate = single;
       }
     } else {
@@ -1761,10 +1863,10 @@ export async function lookupStudentResultByCenter(
       selectedCandidate = single;
     }
   } else {
-    // Case B: Multiple students share the matching name in this center!
+    // Case B: Multiple students share the matching name in this center and level!
     // Disambiguation protocol:
     if (cleanFather) {
-      const fatherMatches = nameMatches.filter((r) => {
+      const fatherMatches = candidateMatches.filter((r) => {
         const rf = fatherColIdx !== -1 ? r[fatherColIdx] : "";
         return matchesFather(rf, cleanFather);
       });
@@ -1810,7 +1912,7 @@ export async function lookupStudentResultByCenter(
         // Father name did not match any candidate
         if (cleanSchool) {
           // Fallback: check if school name uniquely matches any of the candidates
-          const schoolMatches = nameMatches.filter((r) => {
+          const schoolMatches = candidateMatches.filter((r) => {
             const rs = schoolColIdx !== -1 ? r[schoolColIdx] : "";
             return matchesSchool(rs, cleanSchool);
           });
@@ -1833,7 +1935,7 @@ export async function lookupStudentResultByCenter(
       }
     } else if (cleanSchool) {
       // User did not provide father name, but provided school name
-      const schoolMatches = nameMatches.filter((r) => {
+      const schoolMatches = candidateMatches.filter((r) => {
         const rs = schoolColIdx !== -1 ? r[schoolColIdx] : "";
         return matchesSchool(rs, cleanSchool);
       });
@@ -1845,7 +1947,7 @@ export async function lookupStudentResultByCenter(
           success: false,
           ambiguityDetected: true,
           code: "AMBIGUOUS_STUDENT",
-          message: `Multiple students found with the name "${studentNameInput.trim()}" in the specified school. Please provide your Father's Name to verify your result.`,
+          message: `Multiple candidates were found with the name "${studentNameInput.trim()}" in the specified school. Please enter your Father's Name to identify your result.`,
         };
       } else {
         return {
@@ -1860,7 +1962,7 @@ export async function lookupStudentResultByCenter(
         success: false,
         ambiguityDetected: true,
         code: "AMBIGUOUS_STUDENT",
-        message: `Multiple students found with the name "${studentNameInput.trim()}" in ${centerInfo.name}. Please provide your Father's Name or School Name to verify your result.`,
+        message: `Multiple candidates were found with the name "${studentNameInput.trim()}"${cleanTargetLevel ? ` in ${cleanTargetLevel}` : ""}. Please enter your Father's Name to identify your result.`,
       };
     }
   }
@@ -1886,7 +1988,9 @@ export async function lookupStudentResultByCenter(
   const classOrSection = getCol(classColIdx) || undefined;
   const schoolName = getCol(schoolColIdx) || undefined;
   const tehsil = getCol(tehsilColIdx) || centerInfo.tehsil || undefined;
-  const level = getCol(levelColIdx) || undefined;
+  const rawRowLevel = getCol(levelColIdx);
+  const derivedRowLevel = getRowLevel(selectedCandidate, levelColIdx, classColIdx);
+  const level = rawRowLevel || derivedRowLevel || cleanTargetLevel || undefined;
   const levelDescription = getLevelDescription(level) || undefined;
   const rollNumber = rollColIdx !== -1 && getCol(rollColIdx) ? getCol(rollColIdx) : undefined;
 

@@ -52,8 +52,11 @@ async function waitForServer(url, timeoutMs = 60000) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     try {
-      const res = await fetch(`${url}/api/branding`);
-      if (res.status === 200) return true;
+      const res = await fetch(`${url}/`);
+      if (res.status === 200) {
+        const text = await res.text();
+        if (text.includes("Siachen Mark") || text.includes("Triple E")) return true;
+      }
     } catch {
       // wait and retry
     }
@@ -67,7 +70,7 @@ async function runTestSuite() {
   console.log("   TRIPLE E ORGANIZATION - PHASE 5 PRODUCTION QA SUITE      ");
   console.log("============================================================\n");
 
-  const useProd = fs.existsSync(path.join(process.cwd(), ".next"));
+  const useProd = fs.existsSync(path.join(process.cwd(), ".next", "BUILD_ID"));
   console.log(`[Setup] Spawning Next.js server (${useProd ? "production" : "dev"}) on port ${PORT}...`);
   const serverProcess = spawn(
     process.platform === "win32" ? "npx.cmd" : "npx",
@@ -342,7 +345,14 @@ async function runTestSuite() {
 
   } finally {
     console.log("\n[Teardown] Shutting down Next.js test server...");
-    serverProcess.kill("SIGTERM");
+    if (process.platform === "win32" && serverProcess.pid) {
+      try {
+        const { execSync } = await import("child_process");
+        execSync(`taskkill /F /T /PID ${serverProcess.pid}`, { stdio: "ignore" });
+      } catch {}
+    } else {
+      serverProcess.kill("SIGTERM");
+    }
   }
 
   console.log("\n============================================================");

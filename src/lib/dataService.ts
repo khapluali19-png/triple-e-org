@@ -14,6 +14,7 @@ export interface SearchResultResponse {
 export interface StudentSearchParams {
   studentName: string;
   examinationCenter: string;
+  level?: string;
   fatherName?: string;
   schoolName?: string;
 }
@@ -27,6 +28,9 @@ export async function lookupStudentResult(
   if (typeof paramOrRoll === "object") {
     queryParams.set("studentName", paramOrRoll.studentName.trim());
     queryParams.set("center", paramOrRoll.examinationCenter.trim());
+    if (paramOrRoll.level && paramOrRoll.level.trim()) {
+      queryParams.set("level", paramOrRoll.level.trim());
+    }
     if (paramOrRoll.fatherName && paramOrRoll.fatherName.trim()) {
       queryParams.set("fatherName", paramOrRoll.fatherName.trim());
     }

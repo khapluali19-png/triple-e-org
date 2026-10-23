@@ -11,7 +11,8 @@ import {
   User,
   MapPin,
   HelpCircle,
-  CheckCircle2
+  CheckCircle2,
+  Layers
 } from "lucide-react";
 import { StudentResult, WebsiteBrandingConfig } from "@/lib/types";
 import { DEFAULT_BRANDING, EXAMINATION_CENTERS } from "@/lib/constants";
@@ -27,6 +28,7 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
   const [isCountdownActive, setIsCountdownActive] = useState(() => Boolean(branding?.countdown?.enabled));
   const [studentName, setStudentName] = useState("");
   const [examinationCenter, setExaminationCenter] = useState("ghursay");
+  const [level, setLevel] = useState("");
   const [fatherName, setFatherName] = useState("");
   const [schoolName, setSchoolName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -104,6 +106,14 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
       return;
     }
 
+    if (!level.trim()) {
+      setError({
+        code: "MISSING_LEVEL",
+        message: "Please select your Examination Level (Level 1, Level 2, or Level 3) from the dropdown.",
+      });
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setResult(null);
@@ -112,6 +122,7 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
       const response = await lookupStudentResult({
         studentName: cleanName,
         examinationCenter,
+        level: level.trim(),
         fatherName: fatherName.trim() || undefined,
         schoolName: schoolName.trim() || undefined,
       });
@@ -153,7 +164,7 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
     }
   };
 
-  const handleQuickTest = (name: string, center: string, father?: string, school?: string) => {
+  const handleQuickTest = (name: string, center: string, lvl?: string, father?: string, school?: string) => {
     if (isCountdownActive) {
       setError({
         code: "RESULTS_PENDING",
@@ -162,8 +173,10 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
       return;
     }
 
+    const cleanLvl = lvl || "Level 1";
     setStudentName(name);
     setExaminationCenter(center);
+    setLevel(cleanLvl);
     setFatherName(father || "");
     setSchoolName(school || "");
     setError(null);
@@ -174,6 +187,7 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
       lookupStudentResult({
         studentName: name,
         examinationCenter: center,
+        level: cleanLvl,
         fatherName: father || undefined,
         schoolName: school || undefined,
       })
@@ -235,8 +249,8 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
             )}
 
             <form onSubmit={handleSearch} className="space-y-5">
-              {/* Row 1: Examination Center Dropdown (Required) & Student Name (Required) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* Row 1: Examination Center Dropdown (Required), Student Name (Required) & Level Dropdown (Required) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {/* Examination Center Dropdown */}
                 <div className="space-y-1.5">
                   <label 
@@ -257,7 +271,7 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
                       }}
                       className="w-full px-4 py-3 rounded-lg border border-[#E6E9EE] bg-white text-sm font-medium text-[#20252B] disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed focus:outline-none focus:border-[#183153] focus:ring-1 focus:ring-[#183153] transition-all cursor-pointer appearance-none pr-10"
                     >
-                      <option value="">-- Select Examination Center (15 Centers) --</option>
+                      <option value="">-- Select Center (15 Centers) --</option>
                       {EXAMINATION_CENTERS.map((center) => (
                         <option key={center.id} value={center.id}>
                           {center.name}
@@ -271,7 +285,7 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
                     </div>
                   </div>
                   <p className="text-[11px] text-[#737B85]">
-                    Each center searches only its own connected Google Sheet ledger.
+                    Select your official center.
                   </p>
                 </div>
 
@@ -298,7 +312,43 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
                     className="w-full px-4 py-3 rounded-lg border border-[#E6E9EE] text-sm text-[#20252B] disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed placeholder:text-slate-400 focus:outline-none focus:border-[#183153] focus:ring-1 focus:ring-[#183153] transition-all"
                   />
                   <p className="text-[11px] text-[#737B85]">
-                    Primary search key. Roll number is not required.
+                    Primary search key.
+                  </p>
+                </div>
+
+                {/* Level Dropdown (Required) */}
+                <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
+                  <label 
+                    htmlFor="level" 
+                    className="block text-xs font-bold uppercase tracking-wider text-[#20252B] flex items-center gap-1.5"
+                  >
+                    <Layers className="w-3.5 h-3.5 text-[#183153]" />
+                    <span>Level <span className="text-red-500">*</span></span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      id="level"
+                      disabled={loading || isCountdownActive}
+                      value={level}
+                      onChange={(e) => {
+                        setLevel(e.target.value);
+                        if (error) setError(null);
+                      }}
+                      className="w-full px-4 py-3 rounded-lg border border-[#E6E9EE] bg-white text-sm font-medium text-[#20252B] disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed focus:outline-none focus:border-[#183153] focus:ring-1 focus:ring-[#183153] transition-all cursor-pointer appearance-none pr-10"
+                    >
+                      <option value="">-- Select Level --</option>
+                      <option value="Level 1">Level 1</option>
+                      <option value="Level 2">Level 2</option>
+                      <option value="Level 3">Level 3</option>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                      <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                        <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-[#737B85]">
+                    Required category filter.
                   </p>
                 </div>
               </div>
@@ -327,7 +377,7 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
                     className="w-full px-4 py-2.5 rounded-lg border border-[#E6E9EE] text-xs sm:text-sm text-[#20252B] disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed placeholder:text-slate-400 focus:outline-none focus:border-[#183153] focus:ring-1 focus:ring-[#183153] transition-all"
                   />
                   <p className="text-[11px] text-[#737B85]">
-                    Recommended if multiple students share your name.
+                    Used to identify candidates if duplicate names exist.
                   </p>
                 </div>
 
@@ -356,7 +406,7 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
                     className="w-full px-4 py-2.5 rounded-lg border border-[#E6E9EE] text-xs sm:text-sm text-[#20252B] disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed placeholder:text-slate-400 focus:outline-none focus:border-[#183153] focus:ring-1 focus:ring-[#183153] transition-all"
                   />
                   <p className="text-[11px] text-[#737B85]">
-                    Helps distinguish candidates with identical names.
+                    Additional verification identifier.
                   </p>
                 </div>
               </div>
@@ -392,6 +442,19 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
               </div>
             </form>
 
+            {/* Result Search Help Section */}
+            <div id="search-help" className="p-4 sm:p-5 rounded-xl bg-slate-50 border border-[#E6E9EE] text-left space-y-2.5">
+              <div className="flex items-center gap-2 font-bold text-sm text-[#183153]">
+                <HelpCircle className="w-4 h-4 text-[#183153] shrink-0" />
+                <h3 className="font-semibold text-[#183153]">How to Check Your Result</h3>
+              </div>
+              <ol className="list-decimal list-inside space-y-1.5 text-xs sm:text-sm text-[#4A5568] leading-relaxed">
+                <li>Select your examination center and level, then enter your name to search.</li>
+                <li>If multiple candidates have the same name, enter your father&apos;s name to identify your result.</li>
+                <li>If your result is still not found, you may not have provided your father&apos;s name during registration. Please check that your name, examination center, and level are correct, and try again.</li>
+              </ol>
+            </div>
+
             {/* Quick Test Shortcuts for Demonstration & Testing */}
             <div className="pt-4 border-t border-[#E6E9EE]">
               <span className="text-[11px] font-semibold text-[#737B85] block mb-2">
@@ -401,7 +464,7 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
                 <button
                   type="button"
                   disabled={isCountdownActive}
-                  onClick={() => handleQuickTest("Own Ali", "ghursay", "Sajjad Hussain", "Zaki Academy")}
+                  onClick={() => handleQuickTest("Own Ali", "ghursay", "Level 1", "Sajjad Hussain", "Zaki Academy")}
                   className={`px-2.5 py-1 rounded-md text-xs border border-[#E6E9EE] transition-colors ${
                     isCountdownActive 
                       ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
@@ -413,7 +476,7 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
                 <button
                   type="button"
                   disabled={isCountdownActive}
-                  onClick={() => handleQuickTest("Ali Raza", "khaplu", "Muhammad Hussain")}
+                  onClick={() => handleQuickTest("Ali Raza", "khaplu", "Level 1", "Muhammad Hussain")}
                   className={`px-2.5 py-1 rounded-md text-xs border border-[#E6E9EE] transition-colors ${
                     isCountdownActive 
                       ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
@@ -425,7 +488,7 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
                 <button
                   type="button"
                   disabled={isCountdownActive}
-                  onClick={() => handleQuickTest("Fatima Zahra", "khaplu", "Ghulam Mehdi")}
+                  onClick={() => handleQuickTest("Fatima Zahra", "khaplu", "Level 2", "Ghulam Mehdi")}
                   className={`px-2.5 py-1 rounded-md text-xs border border-[#E6E9EE] transition-colors ${
                     isCountdownActive 
                       ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
@@ -437,7 +500,7 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
                 <button
                   type="button"
                   disabled={isCountdownActive}
-                  onClick={() => handleQuickTest("Kareem Ullah", "khaplu", "Sher Khan")}
+                  onClick={() => handleQuickTest("Kareem Ullah", "khaplu", "Level 3", "Sher Khan")}
                   className={`px-2.5 py-1 rounded-md text-xs border border-[#E6E9EE] transition-colors ${
                     isCountdownActive 
                       ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
@@ -449,7 +512,7 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
                 <button
                   type="button"
                   disabled={isCountdownActive}
-                  onClick={() => handleQuickTest("Ilyas Khan", "keris")}
+                  onClick={() => handleQuickTest("Ilyas Khan", "keris", "Level 1")}
                   className={`px-2.5 py-1 rounded-md text-xs border border-[#E6E9EE] transition-colors ${
                     isCountdownActive 
                       ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
@@ -461,7 +524,7 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
                 <button
                   type="button"
                   disabled={isCountdownActive}
-                  onClick={() => handleQuickTest("Mehdi Hassan", "kharfaq")}
+                  onClick={() => handleQuickTest("Mehdi Hassan", "kharfaq", "Level 2")}
                   className={`px-2.5 py-1 rounded-md text-xs border border-[#E6E9EE] transition-colors ${
                     isCountdownActive 
                       ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
@@ -473,19 +536,19 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
                 <button
                   type="button"
                   disabled={isCountdownActive}
-                  onClick={() => handleQuickTest("Muhammad Ali", "khaplu")}
+                  onClick={() => handleQuickTest("Arifa Batool", "ghursay", "Level 2")}
                   className={`px-2.5 py-1 rounded-md text-xs border transition-colors ${
                     isCountdownActive 
                       ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed" 
                       : "bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-200 cursor-pointer"
                   }`}
                 >
-                  Muhammad Ali (Ambiguity Test)
+                  Arifa Batool (Ghursay - Duplicate Prompt)
                 </button>
                 <button
                   type="button"
                   disabled={isCountdownActive}
-                  onClick={() => handleQuickTest("Sairaa", "dumsum")}
+                  onClick={() => handleQuickTest("Sairaa", "dumsum", "Level 1")}
                   className={`px-2.5 py-1 rounded-md text-xs border border-[#E6E9EE] transition-colors ${
                     isCountdownActive 
                       ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
@@ -522,13 +585,13 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
                 <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                 <div className="space-y-1">
                   <h4 className="text-sm font-semibold text-amber-900">
-                    Additional Verification Required: Multiple Students Found
+                    Additional Verification Required: Multiple Candidates Found
                   </h4>
-                  <p className="text-xs text-amber-800 leading-relaxed">
+                  <p className="text-xs text-amber-800 leading-relaxed font-medium">
                     {error.message}
                   </p>
                   <p className="text-[11px] text-slate-500 pt-1">
-                    To protect student privacy and ensure correct scorecard display, please enter your Father&apos;s Name or School Name in the search form above.
+                    Please enter your Father&apos;s Name in the search form above to identify your result.
                   </p>
                 </div>
               </div>
@@ -573,7 +636,7 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
                     {error.message}
                   </p>
                   <p className="text-[11px] text-slate-500 pt-1">
-                    Tip: Verify your selected Examination Center and ensure your name spelling matches the official competition admit card.
+                    Tip: If your result is still not found, you may not have provided your father&apos;s name during registration. Please check that your name, examination center, and level are correct, and try again.
                   </p>
                 </div>
               </div>
@@ -601,6 +664,7 @@ export default function ResultLookup({ branding = DEFAULT_BRANDING }: ResultLook
               onReset={() => {
                 setResult(null);
                 setStudentName("");
+                setLevel("");
                 setFatherName("");
                 setSchoolName("");
                 setError(null);

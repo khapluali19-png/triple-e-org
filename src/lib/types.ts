@@ -104,6 +104,8 @@ export interface CategoryColumnMappings {
   fatherName?: string; // Optional: Father / Guardian Name
   schoolName?: string; // Optional: School / Institution
   district?: string; // Optional: District (e.g. Gilgit, Skardu)
+  tehsil?: string; // Optional: Tehsil
+  level?: string; // Optional: Competition Level
   classOrSection?: string; // Optional: Class or Section
   obtainedMarks: string; // Column header for Obtained Marks (required)
   totalMarks?: string; // Optional: Total Marks column

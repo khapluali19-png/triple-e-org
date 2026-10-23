@@ -431,7 +431,15 @@ export default function ResultCard({
           {/* ======================================================== */}
           {/* 3. TWO-COLUMN RESULT DETAILS (CENTERED DIVIDER)          */}
           {/* ======================================================== */}
-          <div className="cert-section-results max-w-2xl sm:max-w-3xl mx-auto my-2 sm:my-3 px-4 sm:px-6 w-full">
+          <div className="cert-section-results bg-[#fbfdfc] border border-[#0D7B54]/30 rounded-lg py-2.5 sm:py-3.5 px-4 sm:px-6 max-w-2xl sm:max-w-3xl mx-auto my-2 sm:my-3 w-full">
+            <div className="cert-card-badge flex items-center justify-center gap-3 mb-2.5">
+              <div className="cert-card-badge-line h-[1px] w-12 bg-[#0D7B54]/40" />
+              <span className="cert-card-badge-text text-[10.5px] font-bold tracking-[0.2em] text-[#0D7B54] uppercase">
+                Official Examination Scorecard
+              </span>
+              <div className="cert-card-badge-line h-[1px] w-12 bg-[#0D7B54]/40" />
+            </div>
+
             <div className="cert-results-grid grid grid-cols-1 md:grid-cols-2 gap-x-8 sm:gap-x-12 gap-y-1 relative text-xs sm:text-sm text-left">
               {/* LEFT COLUMN: Performance & Evaluation */}
               <div className="cert-col-left space-y-1">
@@ -502,6 +510,13 @@ export default function ResultCard({
                   </div>
                 )}
 
+                {result.classOrSection && (
+                  <div className="cert-result-row flex items-center justify-between">
+                    <span className="cert-result-label font-bold text-[#0E2A47]">Class:</span>
+                    <span className="cert-result-value font-semibold text-[#0E2A47]">{result.classOrSection}</span>
+                  </div>
+                )}
+
                 {result.schoolName && (
                   <div className="cert-result-row flex items-center justify-between">
                     <span className="cert-result-label font-bold text-[#0E2A47]">Institution / School:</span>
@@ -514,12 +529,17 @@ export default function ResultCard({
                   </div>
                 )}
 
-                {result.classOrSection && (
+                {result.tehsil && (
                   <div className="cert-result-row flex items-center justify-between">
-                    <span className="cert-result-label font-bold text-[#0E2A47]">Class:</span>
-                    <span className="cert-result-value font-semibold text-[#0E2A47]">{result.classOrSection}</span>
+                    <span className="cert-result-label font-bold text-[#0E2A47]">Tehsil:</span>
+                    <span className="cert-result-value font-semibold text-[#0E2A47]">{result.tehsil}</span>
                   </div>
                 )}
+
+                <div className="cert-result-row flex items-center justify-between">
+                  <span className="cert-result-label font-bold text-[#0E2A47]">District:</span>
+                  <span className="cert-result-value font-semibold text-[#0E2A47]">{result.district || "Ghanche"}</span>
+                </div>
 
                 {result.rollNumber && (
                   <div className="cert-result-row flex items-center justify-between">
@@ -527,13 +547,6 @@ export default function ResultCard({
                     <span className="cert-result-value font-mono font-semibold text-[#0E2A47]">
                       {result.rollNumber.startsWith("#") ? result.rollNumber : `#${result.rollNumber}`}
                     </span>
-                  </div>
-                )}
-
-                {result.tehsil && (
-                  <div className="cert-result-row flex items-center justify-between">
-                    <span className="cert-result-label font-bold text-[#0E2A47]">Tehsil:</span>
-                    <span className="cert-result-value font-semibold text-[#0E2A47]">{result.tehsil}</span>
                   </div>
                 )}
               </div>

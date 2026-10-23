@@ -68,6 +68,7 @@ export async function GET(request: NextRequest) {
   const rawCenter = searchParams.get("center") || searchParams.get("examinationCenter");
   const rawFather = searchParams.get("fatherName") || searchParams.get("father");
   const rawSchool = searchParams.get("schoolName") || searchParams.get("school");
+  const rawLevel = searchParams.get("level") || searchParams.get("levelId");
 
   const rawRoll = searchParams.get("rollNumber") || searchParams.get("roll");
   const rawCategory = searchParams.get("category");
@@ -111,12 +112,14 @@ export async function GET(request: NextRequest) {
 
     const cleanFatherInput = rawFather ? cleanSearchString(rawFather) : undefined;
     const cleanSchoolInput = rawSchool ? cleanSearchString(rawSchool) : undefined;
+    const cleanLevelInput = rawLevel ? cleanSearchString(rawLevel) : undefined;
 
     const outcome = await lookupStudentResultByCenter(
       centerInfo.id,
-      rawStudentName.trim(),
+      cleanStudentName,
       cleanFatherInput || undefined,
-      cleanSchoolInput || undefined
+      cleanSchoolInput || undefined,
+      cleanLevelInput || undefined
     );
 
     if (outcome.code === "CENTER_NOT_CONFIGURED") {
