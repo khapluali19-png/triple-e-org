@@ -999,14 +999,25 @@ export async function fetchSheetValues(
     /^[a-zA-Z0-9-_]{15,80}$/.test(spreadsheetId)
   ) {
     try {
+      const sheetNameVariants: string[] = [];
+      if (worksheetName) {
+        sheetNameVariants.push(worksheetName);
+        if (worksheetName.toLowerCase() === "specialschool") {
+          sheetNameVariants.push("Special School");
+        } else if (worksheetName.toLowerCase() === "special school") {
+          sheetNameVariants.push("SpecialSchool");
+        }
+      }
+
       const gvizCandidates = [
-        worksheetName
-          ? `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(
-              worksheetName
+        ...sheetNameVariants.map(
+          (name) =>
+            `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(
+              name
             )}`
-          : null,
+        ),
         `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv`,
-      ].filter(Boolean) as string[];
+      ];
 
       for (const gvizUrl of gvizCandidates) {
         try {
@@ -1652,9 +1663,13 @@ export function getCenterBenchmarkSheetData(
     return {
       headers,
       rows: [
-        ["SS-1501", "Kamran Ali", "Ghulam Abbas", "Special Tier", "Special Education Complex Khaplu", "Khaplu", "100", "92", "Level 3"],
+        ["SS-1501", "Amira", "Barkat", "8th", "Special School", "Khaplu", "50", "32", "Level 1"],
+        ["SS-1502", "M. Reehan", "Shahnawaz ALI", "6th", "Special School", "Khaplu", "50", "30", "Level 1"],
+        ["SS-1503", "Farzana", "Abdul Hakim", "8th", "Special School", "Khaplu", "50", "28", "Level 1"],
+        ["SS-1504", "Konain", "M. Hussain", "8th", "Special School", "Khaplu", "50", "26", "Level 1"],
+        ["SS-1505", "Kamran Ali", "Ghulam Abbas", "Special Tier", "Special Education Complex Khaplu", "Khaplu", "50", "35", "Level 1"],
       ],
-      availableWorksheets: ["SpecialSchool", "Summary"],
+      availableWorksheets: ["Special School", "Summary"],
     };
   }
 
@@ -1868,19 +1883,22 @@ export async function lookupStudentResultByCenter(
   }
 
   // 2. Cache key check
-  const cacheKey = `center_${centerInfo.id}_${connection.spreadsheetId}_${connection.worksheetName}`;
+  const targetWorksheet = centerInfo.id === "special-school" && connection.worksheetName === "SpecialSchool"
+    ? "Special School"
+    : connection.worksheetName || centerInfo.name;
+  const cacheKey = `center_${centerInfo.id}_${connection.spreadsheetId}_${targetWorksheet}`;
   let sheetData = SHEET_CACHE.get(cacheKey);
 
   if (!sheetData || Date.now() - sheetData.timestamp > CACHE_TTL_MS) {
     try {
       const fetched = await fetchSheetValues(
         connection.spreadsheetId || centerInfo.id,
-        connection.worksheetName || centerInfo.name,
+        targetWorksheet,
         connection.headerRowIndex || 1
       );
       sheetData = {
         spreadsheetId: connection.spreadsheetId || centerInfo.id,
-        worksheetName: connection.worksheetName || centerInfo.name,
+        worksheetName: targetWorksheet,
         timestamp: Date.now(),
         headers: fetched.headers,
         rows: fetched.rows,

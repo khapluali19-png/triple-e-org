@@ -1,6 +1,6 @@
 {
   "version": "2.1.0",
-  "updatedAt": "2026-10-23T20:07:32.593Z",
+  "updatedAt": "2026-10-25T07:18:16.919Z",
   "serviceAccountConfigured": false,
   "categories": {
     "lower": {
@@ -96,7 +96,7 @@
       "headerRowIndex": 1,
       "status": "connected",
       "lastTestedAt": "2026-10-19T15:39:00.447Z",
-      "lastSyncedAt": "2026-10-23T20:07:32.592Z",
+      "lastSyncedAt": "2026-10-25T07:18:16.918Z",
       "columnMappings": {
         "rollNumber": "Roll No",
         "studentName": "Student Name",
@@ -646,11 +646,11 @@
       "centerName": "Special School",
       "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4/edit?gid=0#gid=0",
       "spreadsheetId": "1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4",
-      "worksheetName": "SpecialSchool",
+      "worksheetName": "Special School",
       "headerRowIndex": 1,
       "status": "connected",
-      "lastTestedAt": "2026-10-20T15:23:12.468Z",
-      "lastSyncedAt": "2026-10-20T15:23:12.468Z",
+      "lastTestedAt": "2026-10-25T12:00:00.000Z",
+      "lastSyncedAt": "2026-10-25T12:00:00.000Z",
       "columnMappings": {
         "studentName": "Name",
         "fatherName": "Father Name",
@@ -663,11 +663,10 @@
         "rollNumber": "Roll No"
       },
       "availableWorksheets": [
-        "SpecialSchool",
+        "Special School",
         "Summary"
       ],
       "detectedHeaders": [
-        "Roll No",
         "Name",
         "Father Name",
         "Class",

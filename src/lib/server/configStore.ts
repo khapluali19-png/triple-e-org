@@ -349,11 +349,24 @@ export function getServerCenterStore(): Record<string, CenterSheetConnection> {
 export function getCenterConnection(centerId: string): CenterSheetConnection | undefined {
   const centers = getServerCenterStore();
   const cleanId = centerId.trim().toLowerCase();
-  const conn = centers[cleanId] || (cleanId === "dumsum" ? DEFAULT_CENTER_SHEETS_CONFIG.dumsum : undefined);
+  let conn = centers[cleanId] || 
+    (cleanId === "dumsum" ? DEFAULT_CENTER_SHEETS_CONFIG.dumsum : undefined) ||
+    (cleanId === "special-school" ? DEFAULT_CENTER_SHEETS_CONFIG["special-school"] : undefined);
   if (!conn) return undefined;
 
   if (cleanId === "dumsum" && (conn.status === "disconnected" || !conn.spreadsheetId)) {
-    return DEFAULT_CENTER_SHEETS_CONFIG.dumsum;
+    conn = DEFAULT_CENTER_SHEETS_CONFIG.dumsum;
+  }
+
+  if (cleanId === "special-school" && (conn.status === "disconnected" || !conn.spreadsheetId)) {
+    conn = DEFAULT_CENTER_SHEETS_CONFIG["special-school"];
+  }
+
+  if (cleanId === "special-school" && conn.worksheetName === "SpecialSchool") {
+    conn = {
+      ...conn,
+      worksheetName: "Special School",
+    };
   }
 
   const store = getServerCategoryStore();

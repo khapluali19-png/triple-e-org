@@ -57,6 +57,18 @@ export function findCenterByIdOrName(centerQuery: string): ExaminationCenterInfo
     if (dumsum) return dumsum;
   }
 
+  // Support Special School aliases (Special, SpecialSchool, special-school, special school)
+  if (
+    raw === "special" ||
+    raw === "specialschool" ||
+    raw === "special-school" ||
+    raw === "special_school" ||
+    raw.includes("special")
+  ) {
+    const special = EXAMINATION_CENTERS.find((c) => c.id === "special-school");
+    if (special) return special;
+  }
+
   // 2. Normalized matching (stripping words like "center", "centre", "examination", "exam", "tehsil")
   const clean = raw
     .replace(/\b(center|centre|examination|exam|tehsil)\b/gi, "")
@@ -71,7 +83,8 @@ export function findCenterByIdOrName(centerQuery: string): ExaminationCenterInfo
         cIdClean === clean ||
         cNameClean === clean ||
         clean.startsWith(cIdClean) ||
-        clean.startsWith(cNameClean)
+        clean.startsWith(cNameClean) ||
+        (clean.length >= 4 && (cIdClean.startsWith(clean) || cNameClean.startsWith(clean)))
       );
     });
     if (slugMatch) return slugMatch;
@@ -425,9 +438,9 @@ export const DEFAULT_CENTER_SHEETS_CONFIG: Record<string, CenterSheetConnection>
   "special-school": {
     centerId: "special-school",
     centerName: "Special School",
-    spreadsheetUrl: "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit",
-    spreadsheetId: "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
-    worksheetName: "SpecialSchool",
+    spreadsheetUrl: "https://docs.google.com/spreadsheets/d/1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4/edit?gid=0#gid=0",
+    spreadsheetId: "1dv0wrdAHFKZZ_DalFOIP68n0TuTqXvld6zv2sEt39V4",
+    worksheetName: "Special School",
     headerRowIndex: 1,
     status: "connected",
     lastTestedAt: new Date().toISOString(),
@@ -443,8 +456,8 @@ export const DEFAULT_CENTER_SHEETS_CONFIG: Record<string, CenterSheetConnection>
       level: "Level",
       rollNumber: "Roll No",
     },
-    availableWorksheets: ["SpecialSchool", "Summary"],
-    detectedHeaders: ["Roll No", "Name", "Father Name", "Class", "School", "Tehsil", "Total Marks", "Obt. Marks", "Level"],
+    availableWorksheets: ["Special School", "Summary"],
+    detectedHeaders: ["Name", "Father Name", "Class", "School", "Tehsil", "Total Marks", "Obt. Marks", "Level"],
   },
 };
 
